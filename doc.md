@@ -28,6 +28,15 @@ classDiagram
         <<interface>>
         + getScoreOfSimilarity(): Int
     } 
+    class Project {
+        <<interface>>
+    }
+    class SourceFile {
+        <<interface>>
+    }
+    SourceFile --* Project
+    Report "*" -- "2" SourceFile: related to
+
     class AntiPlagiarismSession {
         <<interface>>
         + run()
@@ -69,15 +78,6 @@ classDiagram
     AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
     AntiPlagiarismSystem ..> AntiPlagiarismSessionImpl: creates
 
-    class Output {
-        <<interface>>
-    }
-    AntiPlagiarismSession *--> Output
-    class CLIOutput 
-    class FileOutput
-    Output <|.. FileOutput
-    Output <|.. CLIOutput
-
     class ProjectsProvider {
         <<interface>>
     }
@@ -96,4 +96,138 @@ classDiagram
         + load()
     }
     Analyzer *--> KnoledgeBaseRepository
+
+    class Output {
+        <<interface>>
+    }
+    AntiPlagiarismSession *--> Output
+    class CLIOutput 
+    class FileOutput
+    Output <|.. FileOutput
+    Output <|.. CLIOutput
+```
+
+## Design
+### ProjectsProvider
+
+Risorse utili:
+- [GitHub API lib](https://github-api.kohsuke.org/)
+- [Bitbucket API lib](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/)
+
+Note:
+- `GitHubProvider` e `BitBucketProvider` sono creati dalle rispettive implementazioni di `RepoProviderBuilder` che consente di configurare i criteri con cui le _repository_ devono essere cercate (per nome, all'interno di un utente, tramite url...)
+
+```mermaid
+classDiagram
+    direction BT
+    class Project {
+        <<interface>>
+        +getProjectName() String
+        +getContributors() String
+        +getSources() Collection~SourceFile~
+    }
+    class SourceFile {
+        <<interface>>
+        +getFileStream() InputStream
+    }
+    SourceFile --* Project
+
+    class ProjectsProvider {
+        <<interface>>
+        +iterate() Iterator~Project~
+    }
+    Project -- ProjectsProvider
+
+    class BaseProvider {
+        <<abstract>>
+        -projects: Collection~Project~
+        #RepoProvider(Collection~Project~)
+        +iterate() Iterator~Project~
+    }
+    class GitHubProvider {
+        -GitHubProvider()
+        -searchMatchingRepos()
+    }
+    class BitbucketProvider {
+        -BitbucketProvider()
+        -searchMatchinRepos()
+    }
+    
+    BaseProvider ..|> ProjectsProvider
+    GitHubProvider --|> BaseProvider
+    BitbucketProvider --|> BaseProvider
+
+    class RepoProviderBuilder {
+        <<interface>>
+        +byName(repoName: String)
+        +byUser(userName: String)
+        +byUrl(url: String)
+        +build() BaseProvider
+    }
+    class GitHubProviderBuilder
+    class BitbucketProviderBuilder
+    RepoProviderBuilder <|.. GitHubProviderBuilder
+    RepoProviderBuilder <|.. BitbucketProviderBuilder
+    GitHubProviderBuilder ..> GitHubProvider: creates
+    BitbucketProviderBuilder ..> BitbucketProvider: creates
+```
+
+### Output
+
+```mermaid
+classDiagram
+    class Output {
+        <<interface>>
+        +print(output: String)
+    }
+    class CLIOutput 
+    class FileOutput
+    FileOutput ..|> Output
+    CLIOutput ..|> Output
+```
+
+### AntiPlagirismSession
+
+```mermaid
+classDiagram
+    direction BT
+    class AntiPlagiarismSession {
+        <<interface>>
+        + run()
+    }
+
+    class AntiPlagiarismSessionImpl 
+    AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
+
+    class AntiPlagiarismSessionBuilder {
+        +setProvider(provider: ProjectsProvider)
+        +setOutput(output: Output)
+        +build()
+    }
+    AntiPlagiarismSessionBuilder ..> AntiPlagiarismSessionImpl: creates
+```
+
+### Analyzer
+
+TODO
+
+```mermaid
+classDiagram
+    class Analyzer {
+        <<interface>>
+    }
+
+    class Tokenizer
+    class TokenizerProxy
+
+    Tokenizer ..|> Analyzer
+    TokenizerProxy ..|> Analyzer
+    TokenizerProxy *--> Tokenizer
+
+    class SourceRepresentation {
+        <<interface>>
+    }
+    class Token
+    SourceRepresentation <|.. Token
+    Analyzer -- SourceRepresentation: creates
 ```
