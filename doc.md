@@ -150,13 +150,13 @@ classDiagram
         -GitHubProvider(searchCriteria: GHRepositorySearchBuilder)
         -GitHubProvider(URL: String)
         -getMatchingRepoByUrl(URL: String)
-        -getMatchingReposWithCriteria(searchCriteria: \n GHRepositorySearchBuilder)
+        -getMatchinReposByCriteria(searchCriteria: \n GHRepositorySearchBuilder)
     }
     class BitbucketProvider {
         -BitbucketProvider(searchCriteria: RepositorySearchRequest)
         -BitbucketProvider(URL: String)
         -getMatchingRepoByUrl(URL: String)
-        -getMatchinReposWithCriteria(searchCriteria: \nRepositorySearchRequest)
+        -getMatchinReposByCriteria(searchCriteria: \nRepositorySearchRequest)
     }
     
     BaseProvider ..|> ProjectsProvider
