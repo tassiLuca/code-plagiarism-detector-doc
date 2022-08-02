@@ -172,10 +172,13 @@ classDiagram
     BitbucketProviderBuilder ..> BitbucketProvider: creates
 ```
 
+
+
 ### Output
 
 ```mermaid
 classDiagram
+    direction BT
     class Output {
         <<interface>>
         +print(output: String)
@@ -209,10 +212,11 @@ classDiagram
 
 ### Analyzer
 
-TODO
+**TODO**
 
 ```mermaid
 classDiagram
+    direction BT
     class Analyzer {
         <<interface>>
     }
