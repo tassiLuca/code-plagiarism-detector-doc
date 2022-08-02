@@ -176,6 +176,8 @@ classDiagram
     BitbucketProviderBuilder ..> BitbucketProvider: creates
 ```
 
+- [`Repository`](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/com/atlassian/bitbucket/repository/Repository.html) e [`GHRepository`](https://github-api.kohsuke.org/apidocs/org/kohsuke/github/GHRepository.html) sono le interfacce/classi che rappresentano il concetto di Repository nelle librerie di GitHub e Bitbucket.
+
 ```mermaid
 classDiagram 
     direction BT
