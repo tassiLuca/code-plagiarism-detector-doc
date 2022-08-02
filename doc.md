@@ -140,15 +140,15 @@ classDiagram
     }
     Project -- ProjectsProvider
 
-    class RepoProvider~T, in S: SearchQuery<T>~ {
+    class RepoProvider~in S: SearchQuery~ {
         <<interface>>
     }
 
     class GitHubProvider~GHSearchQuery~ {
-        -GitHubProvider(searchQuery: GHSearchQuery)
+        -GitHubProvider(searchQuery: GitHubSearchQuery)
     }
     class BitbucketProvider~BBSearchQuery~ {
-        -BitbucketProvider(searchQuery: BBSearchQuery)
+        -BitbucketProvider(searchQuery: BitbucketSearchQuery)
     }
 
     GitHubProvider ..|> RepoProvider
