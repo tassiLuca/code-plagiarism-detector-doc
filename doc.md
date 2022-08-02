@@ -132,7 +132,7 @@ classDiagram
         <<interface>>
         +getFileStream() InputStream
     }
-    SourceFile --* Project
+    SourceFile <--* Project
 
     class ProjectsProvider {
         <<interface>>
