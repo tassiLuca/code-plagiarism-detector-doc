@@ -144,10 +144,10 @@ classDiagram
         <<interface>>
     }
 
-    class GitHubProvider~GHSearchQuery~ {
+    class GitHubProvider~GitHubSearchQuery~ {
         -GitHubProvider(searchQuery: GitHubSearchQuery)
     }
-    class BitbucketProvider~BBSearchQuery~ {
+    class BitbucketProvider~BitbucketSearchQuery~ {
         -BitbucketProvider(searchQuery: BitbucketSearchQuery)
     }
 
