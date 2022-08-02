@@ -126,7 +126,7 @@ classDiagram
         <<interface>>
         +getProjectName() String
         +getContributors() String
-        +getSources() Collection~SourceFile~
+        +getSources() Iterable~SourceFile~
     }
     class SourceFile {
         <<interface>>
@@ -142,8 +142,8 @@ classDiagram
 
     class BaseProvider {
         <<abstract>>
-        -projects: Collection~Project~
-        #RepoProvider(Collection~Project~)
+        -projects: Iterable~Project~
+        #RepoProvider(Iterable~Project~)
         +iterate() Iterator~Project~
     }
     class GitHubProvider {
