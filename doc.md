@@ -111,12 +111,14 @@ classDiagram
 ### ProjectsProvider
 
 Risorse utili:
-- [GitHub API lib](https://github-api.kohsuke.org/)
-- [Bitbucket API lib](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/)
+- [GitHub API lib](https://github-api.kohsuke.org/) | [doc](https://github-api.kohsuke.org/apidocs/index.html)
+- [Doc Bitbucket API lib](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/)
 
 Note:
-- `GitHubProvider` e `BitBucketProvider` sono creati dalle rispettive implementazioni di `RepoProviderBuilder` che consente di configurare i criteri con cui le _repository_ devono essere cercate (per nome, all'interno di un utente, tramite url...)
-
+- `GitHubProvider` e `BitBucketProvider` sono creati dalle rispettive implementazioni di `RepoProviderBuilder` che consente di configurare i criteri con cui le _repository_ devono essere cercate (per nome, tra le _repo_ di un utente, tramite url...);
+- Durante il processo di creazione del _provider_ da parte del _client_, il _builder_ configura opportunamente la richiesta di ricerca utilizzando le specifiche chiamate API alla libreria GitHub / Bitbucket;
+- `ProjectsProvider` è l'interfaccia che fornisce un iteratore di progetti, con cui si accede a una collezione di `InputStream` che rappresentano il contenuto _raw_ di ciascun sorgente del progetto e a generiche informazioni utili in fase di generazione dei _report_ (quali nome, chi ha sviluppato il progetto...).
+  
 ```mermaid
 classDiagram
     direction BT
@@ -145,12 +147,16 @@ classDiagram
         +iterate() Iterator~Project~
     }
     class GitHubProvider {
-        -GitHubProvider()
-        -searchMatchingRepos()
+        -GitHubProvider(searchCriteria: GHRepositorySearchBuilder)
+        -GitHubProvider(URL: String)
+        -getMatchingRepoByUrl(URL: String)
+        -getMatchingReposWithCriteria(searchCriteria: \n GHRepositorySearchBuilder)
     }
     class BitbucketProvider {
-        -BitbucketProvider()
-        -searchMatchinRepos()
+        -BitbucketProvider(searchCriteria: RepositorySearchRequest)
+        -BitbucketProvider(URL: String)
+        -getMatchingRepoByUrl(URL: String)
+        -getMatchinReposWithCriteria(searchCriteria: \nRepositorySearchRequest)
     }
     
     BaseProvider ..|> ProjectsProvider
@@ -159,10 +165,6 @@ classDiagram
 
     class RepoProviderBuilder {
         <<interface>>
-        +byName(repoName: String)
-        +byUser(userName: String)
-        +byUrl(url: String)
-        +build() BaseProvider
     }
     class GitHubProviderBuilder
     class BitbucketProviderBuilder
@@ -172,7 +174,41 @@ classDiagram
     BitbucketProviderBuilder ..> BitbucketProvider: creates
 ```
 
+- il `RepoProviderBuilder` è implementato mediante uno **Step Builder** in modo tale da garantire la corretta costruzione ed evitare stati inconsistenti. Un indomani potrebbero inoltre essere aggiunti nuovi step (ad esempio `byLanguage()` per filtrare le repo in base al linguaggio).
 
+```mermaid
+classDiagram
+    direction LR
+    class RepoProviderBuilder {
+        <<interface>>
+        +search() FirstStep
+    }
+
+    class FirstStep {
+        <<interface>>
+        +byURL(URL: String) BuildStep
+        +byName(repoName: String) UserStep
+    }
+
+    RepoProviderBuilder ..> FirstStep
+
+    class UserStep {
+        <<interface>>
+        +byUser(user: String) BuildStep
+        +allUsers() BuildStep
+    }
+
+    FirstStep ..> UserStep
+
+    class BuildStep {
+        <<interface>>
+        +build() ProjectsProvider
+    }
+
+    FirstStep ..> BuildStep
+    UserStep ..> BuildStep
+
+```
 
 ### Output
 
@@ -199,7 +235,10 @@ classDiagram
         + run()
     }
 
-    class AntiPlagiarismSessionImpl 
+    class AntiPlagiarismSessionImpl {
+        -AntiPlagiarismSessionImpl(provider: ProjectsProvider, output: Output)
+        +run()
+    }
     AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
 
     class AntiPlagiarismSessionBuilder {
