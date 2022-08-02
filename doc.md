@@ -124,13 +124,13 @@ classDiagram
     direction BT
     class Project {
         <<interface>>
-        +getProjectName() String
-        +getContributors() String
-        +getSources() Iterable~SourceFile~
+        +projectName: String
+        +contributors: Iterable~String~
+        +sources: Iterable~SourceFile~
     }
     class SourceFile {
         <<interface>>
-        +getFileStream() InputStream
+        +fileStream: InputStream
     }
     SourceFile <--* Project
 
@@ -140,23 +140,25 @@ classDiagram
     }
     Project -- ProjectsProvider
 
+    class RepoProvider~T, in S: SearchQuery<T>~ {
+        <<interface>>
+    }
+
+    class GitHubProvider~GHSearchQuery~ {
+        -GitHubProvider(searchQuery: GHSearchQuery)
+    }
+    class BitbucketProvider~BBSearchQuery~ {
+        -BitbucketProvider(searchQuery: BBSearchQuery)
+    }
+
+    GitHubProvider ..|> RepoProvider
+    BitbucketProvider ..|> RepoProvider
+
     class BaseProvider {
         <<abstract>>
         -projects: Iterable~Project~
         #RepoProvider(Iterable~Project~)
         +iterate() Iterator~Project~
-    }
-    class GitHubProvider {
-        -GitHubProvider(searchCriteria: GHRepositorySearchBuilder)
-        -GitHubProvider(URL: String)
-        -getMatchingRepoByUrl(URL: String)
-        -getMatchinReposByCriteria(searchCriteria: \n GHRepositorySearchBuilder)
-    }
-    class BitbucketProvider {
-        -BitbucketProvider(searchCriteria: RepositorySearchRequest)
-        -BitbucketProvider(URL: String)
-        -getMatchingRepoByUrl(URL: String)
-        -getMatchinReposByCriteria(searchCriteria: \nRepositorySearchRequest)
     }
     
     BaseProvider ..|> ProjectsProvider
@@ -172,6 +174,22 @@ classDiagram
     RepoProviderBuilder <|.. BitbucketProviderBuilder
     GitHubProviderBuilder ..> GitHubProvider: creates
     BitbucketProviderBuilder ..> BitbucketProvider: creates
+```
+
+```mermaid
+classDiagram 
+    direction BT
+    class SearchQuery~T~ {
+        <<interface>>
+        +matchingRepos: Iterable~T~
+        +searchByName(repoName: String)
+        +searchByUser(user: String)
+        +searchByUrl(URL: String)
+    }
+    class GitHubSearchQuery~GHRepository~
+    class BitbucketSearchQuery~Repository~
+    GitHubSearchQuery ..|> SearchQuery
+    BitbucketSearchQuery ..|> SearchQuery
 ```
 
 - il `RepoProviderBuilder` è implementato mediante uno **Step Builder** in modo tale da garantire la corretta costruzione ed evitare stati inconsistenti. Un indomani potrebbero inoltre essere aggiunti nuovi step (ad esempio `byLanguage()` per filtrare le repo in base al linguaggio).
@@ -236,17 +254,10 @@ classDiagram
     }
 
     class AntiPlagiarismSessionImpl {
-        -AntiPlagiarismSessionImpl(provider: ProjectsProvider, output: Output)
+        +AntiPlagiarismSessionImpl(provider: ProjectsProvider, output: Output)
         +run()
     }
     AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
-
-    class AntiPlagiarismSessionBuilder {
-        +setProvider(provider: ProjectsProvider)
-        +setOutput(output: Output)
-        +build()
-    }
-    AntiPlagiarismSessionBuilder ..> AntiPlagiarismSessionImpl: creates
 ```
 
 ### Analyzer
