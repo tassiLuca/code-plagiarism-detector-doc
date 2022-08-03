@@ -127,7 +127,7 @@ classDiagram
         <<abstract>>
         -projects: Iterable~Repository~
         #RepoProvider(Iterable~Repository~)
-        +iterate() Iterator~Project~
+        +iterate() Iterator~Repository~
     }
 
     class GitHubProvider~GitHubSearchQuery~ {
