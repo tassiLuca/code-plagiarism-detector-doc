@@ -113,87 +113,79 @@ classDiagram
 Risorse utili:
 - [GitHub API lib](https://github-api.kohsuke.org/) | [doc](https://github-api.kohsuke.org/apidocs/index.html)
 - [Doc Bitbucket API lib](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/)
-
-Note:
-- `GitHubProvider` e `BitBucketProvider` sono creati dalle rispettive implementazioni di `RepoProviderBuilder` che consente di configurare i criteri con cui le _repository_ devono essere cercate (per nome, tra le _repo_ di un utente, tramite url...);
-- Durante il processo di creazione del _provider_ da parte del _client_, il _builder_ configura opportunamente la richiesta di ricerca utilizzando le specifiche chiamate API alla libreria GitHub / Bitbucket;
-- `ProjectsProvider` è l'interfaccia che fornisce un iteratore di progetti, con cui si accede a una collezione di `InputStream` che rappresentano il contenuto _raw_ di ciascun sorgente del progetto e a generiche informazioni utili in fase di generazione dei _report_ (quali nome, chi ha sviluppato il progetto...).
   
 ```mermaid
 classDiagram
     direction BT
-    class Project {
-        <<interface>>
-        +projectName: String
-        +contributors: Iterable~String~
-        +sources: Iterable~SourceFile~
-    }
-    class SourceFile {
-        <<interface>>
-        +fileStream: InputStream
-    }
-    SourceFile <--* Project
 
     class ProjectsProvider {
         <<interface>>
+        +iterate() Iterator~Repository~
+    }
+
+    class BaseProvider {
+        <<abstract>>
+        -projects: Iterable~Repository~
+        #RepoProvider(Iterable~Repository~)
         +iterate() Iterator~Project~
     }
-    Project -- ProjectsProvider
+
+    class GitHubProvider~GitHubSearchQuery~ {
+        +GitHubProvider(url: URL)
+        +GitHubProvider(repoName: String, user: String)
+    }
+    class BitbucketProvider~BitbucketSearchQuery~ {
+        +BitbucketProvider(url: URL)
+        +BitbucketProvider(repoName: String, user: String)
+    }
+    BaseProvider ..|> ProjectsProvider
+    GitHubProvider --|> BaseProvider
+    BitbucketProvider --|> BaseProvider
 
     class RepoProvider~in S: SearchQuery~ {
         <<interface>>
     }
 
-    class GitHubProvider~GitHubSearchQuery~ {
-        -GitHubProvider(searchQuery: GitHubSearchQuery)
-    }
-    class BitbucketProvider~BitbucketSearchQuery~ {
-        -BitbucketProvider(searchQuery: BitbucketSearchQuery)
-    }
+    RepoProvider <|.. GitHubProvider
+    RepoProvider <|.. BitbucketProvider
 
-    GitHubProvider ..|> RepoProvider
-    BitbucketProvider ..|> RepoProvider
-
-    class BaseProvider {
-        <<abstract>>
-        -projects: Iterable~Project~
-        #RepoProvider(Iterable~Project~)
-        +iterate() Iterator~Project~
-    }
-    
-    BaseProvider ..|> ProjectsProvider
-    GitHubProvider --|> BaseProvider
-    BitbucketProvider --|> BaseProvider
-
-    class RepoProviderBuilder {
-        <<interface>>
-    }
-    class GitHubProviderBuilder
-    class BitbucketProviderBuilder
-    RepoProviderBuilder <|.. GitHubProviderBuilder
-    RepoProviderBuilder <|.. BitbucketProviderBuilder
-    GitHubProviderBuilder ..> GitHubProvider: creates
-    BitbucketProviderBuilder ..> BitbucketProvider: creates
+    class SearchQuery
+    SearchQuery --* RepoProvider
 ```
 
 - [`Repository`](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/com/atlassian/bitbucket/repository/Repository.html) e [`GHRepository`](https://github-api.kohsuke.org/apidocs/org/kohsuke/github/GHRepository.html) sono le interfacce/classi che rappresentano il concetto di Repository nelle librerie di GitHub e Bitbucket.
 
 ```mermaid
 classDiagram 
-    direction BT
-    class SearchQuery~T~ {
+    direction LR
+    class SearchQuery {
         <<interface>>
-        +matchingRepos: Iterable~T~
-        +searchByName(repoName: String)
-        +searchByUser(user: String)
-        +searchByUrl(URL: String)
+        +matchingRepos: Iterable~Repository~
+        +ByName(repoName: String)
+        +ByUser(user: String)
+        +ByUrl(URL: String)
     }
-    class GitHubSearchQuery~GHRepository~
-    class BitbucketSearchQuery~Repository~
+    class GitHubSearchQuery
+    class BitbucketSearchQuery
     GitHubSearchQuery ..|> SearchQuery
     BitbucketSearchQuery ..|> SearchQuery
+
+    class Repository {
+        <<interface>>
+        +sources: Iterable~InputStream~
+    }
+    class GitHubRepository {
+        - adapteeRepo: GHRepository
+    }
+    class BitBucketRepository {
+        - adapteeRepo: Repository
+    }
+    Repository <|.. GitHubRepository
+    Repository <|.. BitBucketRepository
+    SearchQuery -- Repository
 ```
 
+**NOTA**: DA CONSIDERARE DI SOSTITUIRE IL BUILDER CON PARAMETRI OPZIONALI E NAMED
 - il `RepoProviderBuilder` è implementato mediante uno **Step Builder** in modo tale da garantire la corretta costruzione ed evitare stati inconsistenti. Un indomani potrebbero inoltre essere aggiunti nuovi step (ad esempio `byLanguage()` per filtrare le repo in base al linguaggio).
 
 ```mermaid
