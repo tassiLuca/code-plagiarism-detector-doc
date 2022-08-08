@@ -172,6 +172,8 @@ classDiagram
 
     class Repository {
         <<interface>>
+        +name: String
+        +contributors: Iterable~String~
         +sources: Iterable~InputStream~
     }
     class GitHubRepository {
@@ -183,43 +185,6 @@ classDiagram
     Repository <|.. GitHubRepository
     Repository <|.. BitBucketRepository
     SearchQuery -- Repository
-```
-
-**NOTA**: DA CONSIDERARE DI SOSTITUIRE IL BUILDER CON PARAMETRI OPZIONALI E NAMED
-- il `RepoProviderBuilder` è implementato mediante uno **Step Builder** in modo tale da garantire la corretta costruzione ed evitare stati inconsistenti. Un indomani potrebbero inoltre essere aggiunti nuovi step (ad esempio `byLanguage()` per filtrare le repo in base al linguaggio).
-
-```mermaid
-classDiagram
-    direction LR
-    class RepoProviderBuilder {
-        <<interface>>
-        +search() FirstStep
-    }
-
-    class FirstStep {
-        <<interface>>
-        +byURL(URL: String) BuildStep
-        +byName(repoName: String) UserStep
-    }
-
-    RepoProviderBuilder ..> FirstStep
-
-    class UserStep {
-        <<interface>>
-        +byUser(user: String) BuildStep
-        +allUsers() BuildStep
-    }
-
-    FirstStep ..> UserStep
-
-    class BuildStep {
-        <<interface>>
-        +build() ProjectsProvider
-    }
-
-    FirstStep ..> BuildStep
-    UserStep ..> BuildStep
-
 ```
 
 ### Output
