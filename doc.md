@@ -112,7 +112,7 @@ classDiagram
 
 Risorse utili:
 - [GitHub API lib](https://github-api.kohsuke.org/) | [doc](https://github-api.kohsuke.org/apidocs/index.html)
-- [Doc Bitbucket API lib](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/)
+- [Doc Bitbucket API lib](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-get) | [Search filters](https://developer.atlassian.com/cloud/bitbucket/rest/intro#filtering)
   
 ```mermaid
 classDiagram
@@ -120,55 +120,8 @@ classDiagram
 
     class ProjectsProvider {
         <<interface>>
-        +iterate() Iterator~Repository~
+        +repositories: Iterable~Repository~
     }
-
-    class BaseProvider {
-        <<abstract>>
-        -projects: Iterable~Repository~
-        #RepoProvider(Iterable~Repository~)
-        +iterate() Iterator~Repository~
-    }
-
-    class GitHubProvider~GitHubSearchQuery~ {
-        +GitHubProvider(url: URL)
-        +GitHubProvider(repoName: String, user: String)
-    }
-    class BitbucketProvider~BitbucketSearchQuery~ {
-        +BitbucketProvider(url: URL)
-        +BitbucketProvider(repoName: String, user: String)
-    }
-    BaseProvider ..|> ProjectsProvider
-    GitHubProvider --|> BaseProvider
-    BitbucketProvider --|> BaseProvider
-
-    class RepoProvider~in S: SearchQuery~ {
-        <<interface>>
-    }
-
-    RepoProvider <|.. GitHubProvider
-    RepoProvider <|.. BitbucketProvider
-
-    class SearchQuery
-    SearchQuery --* RepoProvider
-```
-
-- [`Repository`](https://docs.atlassian.com/bitbucket-server/javadoc/8.2.1/api/com/atlassian/bitbucket/repository/Repository.html) e [`GHRepository`](https://github-api.kohsuke.org/apidocs/org/kohsuke/github/GHRepository.html) sono le interfacce/classi che rappresentano il concetto di Repository nelle librerie di GitHub e Bitbucket.
-
-```mermaid
-classDiagram 
-    direction LR
-    class SearchQuery {
-        <<interface>>
-        +matchingRepos: Iterable~Repository~
-        +ByName(repoName: String)
-        +ByUser(user: String)
-        +ByUrl(URL: String)
-    }
-    class GitHubSearchQuery
-    class BitbucketSearchQuery
-    GitHubSearchQuery ..|> SearchQuery
-    BitbucketSearchQuery ..|> SearchQuery
 
     class Repository {
         <<interface>>
@@ -180,11 +133,58 @@ classDiagram
         - adapteeRepo: GHRepository
     }
     class BitBucketRepository {
-        - adapteeRepo: Repository
+        - repoInfos: JSON
     }
-    Repository <|.. GitHubRepository
-    Repository <|.. BitBucketRepository
-    SearchQuery -- Repository
+    GitHubRepository ..|> Repository
+    BitBucketRepository ..|> Repository
+    Repository -- ProjectsProvider
+
+    class GitHubProvider {
+        +GitHubProvider(url: URL) Iterable~Repository~
+        +GitHubProvider(criteria: SearchCriteria)Iterable~Repository~
+    }
+    class BitbucketProvider {
+        +BitbucketProvider(url: URL) Iterable~Repository~
+        +BitbucketProvider(criteria: SearchCriteria) Iterable~Repository~
+    }
+    GitHubProvider ..|> ProjectsProvider
+    BitbucketProvider ..|> ProjectsProvider
+```
+
+```mermaid
+classDiagram
+    direction BT
+    class SearchCriteria~T~ {
+        <<interface>>
+        +apply() T
+    }
+
+    class GitHubSearchCriteria~GHRepositoryBuilder~ {
+        <<interface>>
+    }
+    GitHubSearchCriteria --|> SearchCriteria
+    class ByGitHubUser
+    ByGitHubUser ..|> GitHubSearchCriteria
+    class GitHubCompoundCriteria {
+        <<abstract>>
+    }
+    GitHubCompoundCriteria ..|> GitHubSearchCriteria
+    ByGitHubName --|> GitHubCompoundCriteria
+    ByGitHubLanguage --|> GitHubCompoundCriteria
+
+    class BitbucketSearchCriteria~String~ {
+        <<interface>>
+    }
+    BitbucketSearchCriteria --|> SearchCriteria
+    class ByBitbucketUser
+    ByBitbucketUser ..|> BitbucketSearchCriteria
+    class BitbucketCompoundCriteria {
+        <<abstract>>
+    }
+    BitbucketCompoundCriteria ..|> BitbucketSearchCriteria
+    ByBitbucketName --|> BitbucketCompoundCriteria
+    ByBitbucketLanguage --|> BitbucketCompoundCriteria
+
 ```
 
 ### Output
