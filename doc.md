@@ -109,10 +109,6 @@ classDiagram
 
 ## Design
 ### ProjectsProvider
-
-Risorse utili:
-- [GitHub API lib](https://github-api.kohsuke.org/) | [doc](https://github-api.kohsuke.org/apidocs/index.html)
-- [Doc Bitbucket API lib](https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-get) | [Search filters](https://developer.atlassian.com/cloud/bitbucket/rest/intro#filtering)
   
 ```mermaid
 classDiagram
@@ -127,25 +123,39 @@ classDiagram
         <<interface>>
         +name: String
         +contributors: Iterable~String~
-        +sources: Iterable~InputStream~
+        +getSources(language: String) Iterable~File~
     }
+    class AbstractRepository {
+        <<abstract>>
+        #cloneUrl: URL
+        +getSources(language: String) Iterable~File~
+    }
+    AbstractRepository ..|> Repository
     class GitHubRepository {
-        - adapteeRepo: GHRepository
+        -adapteeRepo: Repo
+        +name: String
+        +cloneUrl: URL
+        +GitHubRepository(adapteeRepo: Repo)
     }
     class BitBucketRepository {
-        - repoInfos: JSON
+        -repoInfos: JSONObject
+        +name: String
+        +cloneUrl: URL
+        +BitBucketRepository(repoInfos: JSONObject)
     }
-    GitHubRepository ..|> Repository
-    BitBucketRepository ..|> Repository
+    GitHubRepository --|> AbstractRepository
+    BitBucketRepository --|> AbstractRepository
     Repository -- ProjectsProvider
 
     class GitHubProvider {
-        +GitHubProvider(url: URL) Iterable~Repository~
-        +GitHubProvider(criteria: SearchCriteria)Iterable~Repository~
+        +GitHubProvider(url: URL)
+        +GitHubProvider(criteria: SearchCriteria)
+        +repositories: Iterable~Repository~
     }
     class BitbucketProvider {
-        +BitbucketProvider(url: URL) Iterable~Repository~
-        +BitbucketProvider(criteria: SearchCriteria) Iterable~Repository~
+        +BitbucketProvider(url: URL)
+        +BitbucketProvider(criteria: SearchCriteria)
+        +repositories: Iterable~Repository~
     }
     GitHubProvider ..|> ProjectsProvider
     BitbucketProvider ..|> ProjectsProvider
@@ -154,10 +164,17 @@ classDiagram
 ```mermaid
 classDiagram
     direction BT
+    class RepositoySearchQuery~T, in C : SearchCriteria<T>~ {
+        +byLink(url: URL) Repository
+        +byCriteria(criteria: C) Iterable~Repository~
+    }
+
     class SearchCriteria~T~ {
         <<interface>>
         +apply() T
     }
+
+    SearchCriteria -- RepositoySearchQuery
 
     class GitHubSearchCriteria~GHRepositoryBuilder~ {
         <<interface>>
