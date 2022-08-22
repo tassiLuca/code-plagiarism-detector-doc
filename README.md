@@ -1,2 +1,2 @@
 # code-plagiarism-detector-doc
-Documentation for code-plagiarism-detector-doc project.
+Documentation for code-plagiarism-detector project.
