@@ -113,12 +113,12 @@ classDiagram
 ```mermaid
 classDiagram
     direction BT
-    class RepositoryProvider~T, in C : SearchCriteria<T>~ {
+    class RepositoryProvider~in C : SearchCriteria<T>~ {
         <<interface>>
         +byLink(url: URL) Repository
         +byCriteria(criteria: C) Iterable~Repository~
     }
-    class AbstractRepositoryProvider {
+    class AbstractRepositoryProvider~in C: SearchCriteria~ {
         <<abstract>>
         +byLink(url: URL) Repository
         #urlIsValid(urL: URL)* Boolean
@@ -126,8 +126,8 @@ classDiagram
     }
     AbstractRepositoryProvider ..|> RepositoryProvider
 
-    class GitHubProvider~String, GitHubSearchCriteria~
-    class BitbucketProvider~String, BitbucketSearchCriteria~
+    class GitHubProvider~GitHubSearchCriteria~
+    class BitbucketProvider~BitbucketSearchCriteria~
     GitHubProvider --|> AbstractRepositoryProvider
     BitbucketProvider --|> AbstractRepositoryProvider
 
@@ -172,6 +172,7 @@ classDiagram
 
     class RepoContentSupplierStrategy {
         <<interface>>
+        +getFilesOf(extensions: Iterable~String~)
     }
     RepoContentSupplierStrategy <--o Repository
     class RepoContentSupplierCloneStrategy 
