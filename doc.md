@@ -113,16 +113,40 @@ classDiagram
 ```mermaid
 classDiagram
     direction BT
-
-    class ProjectsProvider {
+    class RepositoryProvider~T, in C : SearchCriteria<T>~ {
         <<interface>>
-        +repositories: Iterable~Repository~
+        +byLink(url: URL) Repository
+        +byCriteria(criteria: C) Iterable~Repository~
     }
+    class AbstractRepositoryProvider {
+        <<abstract>>
+        +byLink(url: URL) Repository
+        #urlIsValid(urL: URL)* Boolean
+        #getRepoByURL(url: URL)* Repository
+    }
+    AbstractRepositoryProvider ..|> RepositoryProvider
 
+    class GitHubProvider~String, GitHubSearchCriteria~
+    class BitbucketProvider~String, BitbucketSearchCriteria~
+    GitHubProvider --|> AbstractRepositoryProvider
+    BitbucketProvider --|> AbstractRepositoryProvider
+
+    class TokenSupplierStrategy {
+        <<interface>>
+        +token: String
+    }
+    TokenSupplierStrategy <--o RepositoryProvider
+    class EnvironmentTokenSupplier 
+    EnvironmentTokenSupplier ..|> TokenSupplierStrategy
+```
+
+```mermaid
+classDiagram
+    direction BT
     class Repository {
         <<interface>>
         +name: String
-        +contributors: Iterable~String~
+        +owner: String
         +getSources(language: String) Iterable~File~
     }
     class AbstractRepository {
@@ -134,50 +158,37 @@ classDiagram
     class GitHubRepository {
         -adapteeRepo: Repo
         +name: String
-        +cloneUrl: URL
+        #cloneUrl: URL
         +GitHubRepository(adapteeRepo: Repo)
     }
     class BitBucketRepository {
         -repoInfos: JSONObject
         +name: String
-        +cloneUrl: URL
+        #cloneUrl: URL
         +BitBucketRepository(repoInfos: JSONObject)
     }
     GitHubRepository --|> AbstractRepository
     BitBucketRepository --|> AbstractRepository
-    Repository -- ProjectsProvider
 
-    class GitHubProvider {
-        +GitHubProvider(url: URL)
-        +GitHubProvider(criteria: SearchCriteria)
-        +repositories: Iterable~Repository~
+    class RepoContentSupplierStrategy {
+        <<interface>>
     }
-    class BitbucketProvider {
-        +BitbucketProvider(url: URL)
-        +BitbucketProvider(criteria: SearchCriteria)
-        +repositories: Iterable~Repository~
-    }
-    GitHubProvider ..|> ProjectsProvider
-    BitbucketProvider ..|> ProjectsProvider
+    RepoContentSupplierStrategy <--o Repository
+    class RepoContentSupplierCloneStrategy 
+    RepoContentSupplierCloneStrategy ..|> RepoContentSupplierStrategy
 ```
 
 ```mermaid
 classDiagram
     direction BT
-    class RepositoySearchQuery~T, in C : SearchCriteria<T>~ {
-        +byLink(url: URL) Repository
-        +byCriteria(criteria: C) Iterable~Repository~
-    }
-
     class SearchCriteria~T~ {
         <<interface>>
         +apply() T
     }
 
-    SearchCriteria -- RepositoySearchQuery
-
-    class GitHubSearchCriteria~GHRepositoryBuilder~ {
+    class GitHubSearchCriteria~String~ {
         <<interface>>
+        +apply() String
     }
     GitHubSearchCriteria --|> SearchCriteria
     class ByGitHubUser
@@ -191,6 +202,7 @@ classDiagram
 
     class BitbucketSearchCriteria~String~ {
         <<interface>>
+        +apply() String
     }
     BitbucketSearchCriteria --|> SearchCriteria
     class ByBitbucketUser
