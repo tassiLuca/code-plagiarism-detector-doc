@@ -110,6 +110,11 @@ classDiagram
 ## Design
 ### ProjectsProvider
   
+Componenti:
+- `RepositoryProvider`: un generico _provider_ di repository che consente al cliente di richiedere una repository in base al suo link diretto o attraverso un criterio.
+- `AbstractRepositoryProvider` cattura l'implementazione comune dei due concreti `GitHub` e `BitbucketProvider`. 
+- `TokenSupplierStrategy` è l'interfaccia a cui viene richiesto di recuperare il token di autenticazione ad un servizio. L'implementazione di default ricerca tra variabili d'ambiente.
+
 ```mermaid
 classDiagram
     direction BT
@@ -139,6 +144,9 @@ classDiagram
     class EnvironmentTokenSupplier 
     EnvironmentTokenSupplier ..|> TokenSupplierStrategy
 ```
+
+- L'interfaccia `Repository` espone proprietà e metodi per ottenere il suo nome, il suo _owner_ e i suoi sorgenti in base a un dato linguaggio di programmazione. Anche in questo caso `AbstractRepository` cattura l'implementazione comune di `GitHubRepository` e `BitBucketRepository`. 
+- La logica di recupero dei repository remoti e dei relativi file è demandata a un'interfaccia via Strategy a `RepoContentSupplierStrategy`: l'implentazione di default (`RepoContentSupplierCloneStrategy`) clona localmente la repo (altri approcci potrebbero essere seguiti, motivo per il quale si è deciso di scorporare in un'interfaccia a sè stante lo specifico algoritmo di recupero del contenuto di una repo).
 
 ```mermaid
 classDiagram
@@ -178,6 +186,11 @@ classDiagram
     class RepoContentSupplierCloneStrategy 
     RepoContentSupplierCloneStrategy ..|> RepoContentSupplierStrategy
 ```
+
+- `SearchCriteria` è un'interfaccia che rappresenta un criterio con cui filtrare le repo.
+- Per fare in modo che i criteri siano componibili si è usato un _Decorator_: `GitHubCompoundCriteria`. In questo modo possono essere creati dinamicamente criteri compositi in base alle esigenze (ed è estendibile perché potrebbero essere aggiunti altri criteri di ricerca, come il numero di _stars_ o se archiviata o no...)
+- [Link Bitbucket > Filter and sort API objects ](https://developer.atlassian.com/cloud/bitbucket/rest/intro/#filtering)
+- [Link GitHub > Searching for repositories](https://docs.github.com/en/search-github/searching-on-github/searching-for-repositories)
 
 ```mermaid
 classDiagram
