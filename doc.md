@@ -131,8 +131,16 @@ classDiagram
     }
     AbstractRepositoryProvider ..|> RepositoryProvider
 
-    class GitHubProvider~GitHubSearchCriteria~
-    class BitbucketProvider~BitbucketSearchCriteria~
+    class GitHubProvider~GitHubSearchCriteria~ {
+        #getRepoByURL(url: URL) Repository
+        #urlIsValid(urL: URL) Boolean
+        +byCriteria(criteria: C) Iterable~Repository~
+    }
+    class BitbucketProvider~BitbucketSearchCriteria~ {
+        #getRepoByURL(url: URL) Repository
+        #urlIsValid(urL: URL) Boolean
+        +byCriteria(criteria: C) Iterable~Repository~
+    }
     GitHubProvider --|> AbstractRepositoryProvider
     BitbucketProvider --|> AbstractRepositoryProvider
 
