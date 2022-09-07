@@ -2,6 +2,18 @@
 
 [Link Github](https://github.com/tassiLuca/code-plagiarism-detector)
 
+- [Code plagiarism detector doc](#code-plagiarism-detector-doc)
+  - [Analisi dei requisiti](#analisi-dei-requisiti)
+    - [Requisiti funzionali](#requisiti-funzionali)
+    - [Requisiti non funzionali](#requisiti-non-funzionali)
+    - [Modello del dominio](#modello-del-dominio)
+  - [Architettura](#architettura)
+  - [Design](#design)
+    - [ProjectsProvider](#projectsprovider)
+    - [Output](#output)
+    - [AntiPlagirismSession](#antiplagirismsession)
+    - [Analyzer](#analyzer)
+
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
 
@@ -272,26 +284,89 @@ classDiagram
 
 ### Analyzer
 
-**TODO**
+Viene qui impiegato il pattern [Pipeline](https://java-design-patterns.com/patterns/pipeline/) per modellare la sequenza di trasformazioni che vengono eseguite per passare dal file sorgente alla sua rappresentazione che verrà successivamente confrontata.
+
+```mermaid 
+classDiagram
+    class Analyzer~I, O~ {
+        <<interface>>
+        +execute(input: I) O
+    }
+
+    class StepHandler~I, O~ {
+        <<interface>>
+        +process(input: I) O
+    }
+    Parser ..|> StepHandler
+    Preprocessor ..|> StepHandler
+    Tokenizer ..|> StepHandler
+
+    class TokenizationAnalyzer {
+        -pipeline: StepHandler
+        +execute(input: I) O
+    }
+    TokenizationAnalyzer ..|> Analyzer
+    TokenizationAnalyzer *--> StepHandler
+
+    class TokenizationAnalyzerProxy {
+        -analyzer: TokenAnalyzer
+        -knoledgeBaseRepo: KnoledgeBaseRepository
+        +execute(input: I) O
+    }
+    TokenizationAnalyzerProxy ..|> Analyzer
+    TokenizationAnalyzerProxy *--> TokenizationAnalyzer
+```
+
+La sequenza di trasformazioni da eseguire:
+| StepHandler |  Input  |       Output      |
+|-------------|---------|-------------------|
+|Parser       | File    | AST               |
+|Preprocessor | AST     | AST               |
+|Tokenizer    | AST     | Sequenza di token |
 
 ```mermaid
 classDiagram
-    direction BT
-    class Analyzer {
-        <<interface>>
-    }
-
-    class Tokenizer
-    class TokenizerProxy
-
-    Tokenizer ..|> Analyzer
-    TokenizerProxy ..|> Analyzer
-    TokenizerProxy *--> Tokenizer
-
     class SourceRepresentation {
         <<interface>>
+        +file: File
     }
-    class Token
-    SourceRepresentation <|.. Token
-    Analyzer -- SourceRepresentation: creates
+    class TokenizedSource {
+        +tokens: Sequence~Token~
+        TokenizedSource(file: File, tokens: Sequence~Token~)
+    }
+    TokenizedSource ..|> SourceRepresentation
+
+    class Token {
+        <<interface>>
+        +line: Int
+        +marker: Char
+    }
+
+    class TokensGenerator~I~ {
+        <<interface>>
+        +generate(input: I) Sequence~Token~
+    }
+    TokensGenerator -- Token
+    Token -- TokenizedSource
+
+```
+
+Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
+
+```mermaid 
+classDiagram
+    class PlagiarismDetector~I~ {
+        <<interface>>
+        +getScoreOfSimilarity(input: I) Int
+    }
+```
+
+`KnoledgeBaseRepository` è il componente che si occuperà di salvare il risultato del _processing_ dei sorgenti in modo tale da poter riutilizzarli in un secondo momento senza dover rifare l'analisi.
+```mermaid
+classDiagram
+    class KnoledgeBaseRepository {
+        <<interface>>
+        +save()
+        +loadIfExists()
+    }
 ```
