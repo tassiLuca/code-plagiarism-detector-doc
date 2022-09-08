@@ -349,12 +349,13 @@ classDiagram
     class TokenizedSource {
         +tokens: Sequence~Token~
         TokenizedSource(file: File, tokens: Sequence~Token~)
+        +splitInGramsOf(dimension: Int)
     }
     TokenizedSource ..|> SourceRepresentation
 
     class Token {
         <<interface>>
-        +line: Int
+        +coordinates: Pair~Int, Int~
         +marker: Char
     }
     Token -- TokenizedSource
@@ -365,9 +366,9 @@ Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la s
 ```mermaid 
 classDiagram
     direction BT
-    class PlagiarismDetector~I~ {
+    class PlagiarismDetector~in I: SourceRepresentation~ {
         <<interface>>
-        +getScoreOfSimilarity(first: I, second: I) ComparisonResult
+        +computeSimilarity(first: I, second: I) ComparisonResult
     }
 
     class ComparisonResult~I~ {
@@ -375,9 +376,14 @@ classDiagram
         -first: I
         -second: I
         -scoreOfSimilarity: Int
-        -matches
+        -matches: Sequence~Match~
     }
     PlagiarismDetector -- ComparisonResult
+
+    class Match {
+        <<interface>>
+    }
+    ComparisonResult -- Match
 
     class PlagiarismDetectorImpl {
         -strategy: ComparisonStrategy
