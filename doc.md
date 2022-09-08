@@ -284,11 +284,14 @@ classDiagram
 
 ### Analyzer
 
-Viene qui impiegato il pattern [Pipeline](https://java-design-patterns.com/patterns/pipeline/) per modellare la sequenza di trasformazioni che vengono eseguite per passare dal file sorgente alla sua rappresentazione che verrà successivamente confrontata.
+Viene qui impiegato il pattern [Pipeline](https://java-design-patterns.com/patterns/pipeline/) per modellare la sequenza di trasformazioni che vengono eseguite per passare dal file sorgente alla sua rappresentazione confrontabile.
+
+Il `TokenizationAnalyzerProxy` è l'oggetto intermediario che si occuperà, nel caso in cui quel file sia già stato tokenizzato e memorizzato in precedenza, di recuperarlo senza ri-effettuare la tokenizzazione.
 
 ```mermaid 
 classDiagram
-    class Analyzer~I, O~ {
+    direction BT
+    class Analyzer~I, out O: SourceRepresentation~ {
         <<interface>>
         +execute(input: I) O
     }
@@ -297,21 +300,33 @@ classDiagram
         <<interface>>
         +process(input: I) O
     }
+
+    class Parser~File, AST~ {
+        +process(input: File) AST
+    }
     Parser ..|> StepHandler
+
+    class Preprocessor~AST, AST~ {
+        +process(input: AST) AST
+    }
     Preprocessor ..|> StepHandler
+
+    class Tokenizer~AST, Sequence<Token>~ {
+        +process(input: AST) Sequence~Token~
+    }
     Tokenizer ..|> StepHandler
 
-    class TokenizationAnalyzer {
+    class TokenizationAnalyzer~File, TokenizedSource~ {
         -pipeline: StepHandler
-        +execute(input: I) O
+        +execute(input: File) TokenizedSource
     }
     TokenizationAnalyzer ..|> Analyzer
-    TokenizationAnalyzer *--> StepHandler
+    StepHandler <--* TokenizationAnalyzer
 
-    class TokenizationAnalyzerProxy {
+    class TokenizationAnalyzerProxy~File, TokenizedSource~ {
         -analyzer: TokenAnalyzer
         -knoledgeBaseRepo: KnoledgeBaseRepository
-        +execute(input: I) O
+        +execute(input: File) TokenizedSource
     }
     TokenizationAnalyzerProxy ..|> Analyzer
     TokenizationAnalyzerProxy *--> TokenizationAnalyzer
@@ -326,6 +341,7 @@ La sequenza di trasformazioni da eseguire:
 
 ```mermaid
 classDiagram
+    direction BT
     class SourceRepresentation {
         <<interface>>
         +file: File
@@ -341,29 +357,46 @@ classDiagram
         +line: Int
         +marker: Char
     }
-
-    class TokensGenerator~I~ {
-        <<interface>>
-        +generate(input: I) Sequence~Token~
-    }
-    TokensGenerator -- Token
     Token -- TokenizedSource
-
 ```
 
 Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
 
 ```mermaid 
 classDiagram
+    direction BT
     class PlagiarismDetector~I~ {
         <<interface>>
-        +getScoreOfSimilarity(input: I) Int
+        +getScoreOfSimilarity(first: I, second: I) ComparisonResult
     }
+
+    class ComparisonResult~I~ {
+        <<interface>>
+        -first: I
+        -second: I
+        -scoreOfSimilarity: Int
+        -matches
+    }
+    PlagiarismDetector -- ComparisonResult
+
+    class PlagiarismDetectorImpl {
+        -strategy: ComparisonStrategy
+    }
+    PlagiarismDetectorImpl ..|> PlagiarismDetector
+
+    class ComparisonStrategy {
+        <<interface>>
+    }
+    PlagiarismDetectorImpl *--> ComparisonStrategy
+
+    class KarpRabinStrategy 
+    KarpRabinStrategy ..|> ComparisonStrategy
 ```
 
 `KnoledgeBaseRepository` è il componente che si occuperà di salvare il risultato del _processing_ dei sorgenti in modo tale da poter riutilizzarli in un secondo momento senza dover rifare l'analisi.
 ```mermaid
 classDiagram
+    direction BT
     class KnoledgeBaseRepository {
         <<interface>>
         +save()
