@@ -318,7 +318,7 @@ classDiagram
     }
     Preprocessor ..|> StepHandler
 
-    class Tokenizer~AST, Sequence<&#8203;Token&#8203;>~ {
+    class Tokenizer~AST, Sequence< Token >~ {
         +process(input: AST) Sequence~Token~
     }
     Tokenizer ..|> StepHandler
@@ -350,7 +350,7 @@ classDiagram
         +file: File
         +representation: T
     }
-    class TokenizedSource~Sequence<&#8203;Token&#8203;>~ {
+    class TokenizedSource~Sequence< Token >~ {
         <<interface>>
         +splitInGramsOf(dimension: Int) Sequence~Gram~
     }
