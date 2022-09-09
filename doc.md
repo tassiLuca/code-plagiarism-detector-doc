@@ -13,6 +13,7 @@
     - [Output](#output)
     - [AntiPlagirismSession](#antiplagirismsession)
     - [Analyzer](#analyzer)
+    - [Configurable Options - **TODO**](#configurable-options---todo)
 
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
@@ -284,9 +285,15 @@ classDiagram
 
 ### Analyzer
 
+<!-- italian version:
 Viene qui impiegato il pattern [Pipeline](https://java-design-patterns.com/patterns/pipeline/) per modellare la sequenza di trasformazioni che vengono eseguite per passare dal file sorgente alla sua rappresentazione confrontabile.
 
 Il `TokenizationAnalyzerProxy` è l'oggetto intermediario che si occuperà, nel caso in cui quel file sia già stato tokenizzato e memorizzato in precedenza, di recuperarlo senza ri-effettuare la tokenizzazione.
+-->
+
+The [Pipeline](https://java-design-patterns.com/patterns/pipeline/) pattern is used to model the sequence of transformations performed to transform a source file into a comparable representation.
+
+`TokenizationAnalyzerProxy` is an intermediary object that manages the recovery of previously analyzed and cached files without having to re-analyse them.
 
 ```mermaid 
 classDiagram
@@ -311,7 +318,7 @@ classDiagram
     }
     Preprocessor ..|> StepHandler
 
-    class Tokenizer~AST, Sequence<Token>~ {
+    class Tokenizer~AST, Sequence<&#8203;Token&#8203;>~ {
         +process(input: AST) Sequence~Token~
     }
     Tokenizer ..|> StepHandler
@@ -332,36 +339,43 @@ classDiagram
     TokenizationAnalyzerProxy *--> TokenizationAnalyzer
 ```
 
-La sequenza di trasformazioni da eseguire:
-| StepHandler |  Input  |       Output      |
-|-------------|---------|-------------------|
-|Parser       | File    | AST               |
-|Preprocessor | AST     | AST               |
-|Tokenizer    | AST     | Sequenza di token |
+`SourceRepresentation` is the interface modeling the intermediate representation, which is generated from the source file, prior to comparison.
+Among available representations, the source code token sequence is the most common one: `TokenizedSource` embodies a token-based representation of the source code, which is a sequence of structure-preserving terms found in the code files.
 
 ```mermaid
 classDiagram
     direction BT
-    class SourceRepresentation {
+    class SourceRepresentation~T~ {
         <<interface>>
         +file: File
+        +representation: T
     }
-    class TokenizedSource {
-        +tokens: Sequence~Token~
-        TokenizedSource(file: File, tokens: Sequence~Token~)
-        +splitInGramsOf(dimension: Int)
+    class TokenizedSource~Sequence<&#8203;Token&#8203;>~ {
+        <<interface>>
+        +splitInGramsOf(dimension: Int) Sequence~Gram~
     }
-    TokenizedSource ..|> SourceRepresentation
+    TokenizedSource --|> SourceRepresentation
 
     class Token {
         <<interface>>
-        +coordinates: Pair~Int, Int~
-        +marker: Char
+        +line: Int
+        +column: Int
+        +marker: Integer
     }
     Token -- TokenizedSource
-```
 
+    class Gram {
+        <<interface>>
+        +tokens: Sequence~Token~
+    }
+    Token --* Gram
+```
+<!-- italian version:
 Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
+-->
+
+`PlagiarismDetector` is the component that detects similarities between two `SourceRepresentation`.
+`ComparisonStrategy` encapsulates the specific algorithm used to detect the similarities.
 
 ```mermaid 
 classDiagram
@@ -371,19 +385,14 @@ classDiagram
         +computeSimilarity(first: I, second: I) ComparisonResult
     }
 
-    class ComparisonResult~I~ {
+    class ComparisonResult~in I: SourceRepresentation~ {
         <<interface>>
         -first: I
         -second: I
-        -scoreOfSimilarity: Int
-        -matches: Sequence~Match~
+        +scoreOfSimilarity: Int
+        +matches: Sequence~Token~
     }
     PlagiarismDetector -- ComparisonResult
-
-    class Match {
-        <<interface>>
-    }
-    ComparisonResult -- Match
 
     class PlagiarismDetectorImpl {
         -strategy: ComparisonStrategy
@@ -399,13 +408,38 @@ classDiagram
     KarpRabinStrategy ..|> ComparisonStrategy
 ```
 
+<!-- italian version:
 `KnoledgeBaseRepository` è il componente che si occuperà di salvare il risultato del _processing_ dei sorgenti in modo tale da poter riutilizzarli in un secondo momento senza dover rifare l'analisi.
+-->
+
+**[TODO]** `KnoledgeBaseRepository` is the component that will take care of saving/loading the results of project sources processing so that they can be reused at a later time without having to be re-analyzed
+
 ```mermaid
 classDiagram
     direction BT
     class KnoledgeBaseRepository {
         <<interface>>
         +save()
-        +loadIfExists()
+        +loadIfExists() 
     }
+```
+
+### Configurable Options - **TODO**
+- `--minimum-tokens`: The minimum token length which should be reported as a duplicate;
+- `--provider`: the providers of projects (sources);
+- `--output-format`: report formats;
+- `--language`: Sources code language;
+- `--verbose`: Debug mode;
+- `--exclude`: Files to be excluded from checks (for example `Pair.java`).
+
+```mermaid 
+classDiagram
+    direction BT
+    class CPDConfigurationManager {
+        <<interface>>
+        +loadOrTakeDefaultConfiguration() RunConfiguration
+        +setConfiguration(configuration: RunConfiguration)
+    }
+
+    RunConfiguration --* CPDConfigurationManager
 ```
