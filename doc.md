@@ -386,7 +386,7 @@ classDiagram
         +computeSimilarity(first: S, second: S) ComparisonResult
     }
 
-    class ComparisonResult~in S: SourceRepresentation~ {
+    class ComparisonResult~S: SourceRepresentation~ {
         <<interface>>
         -first: S
         -second: S
