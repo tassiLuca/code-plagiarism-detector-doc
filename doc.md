@@ -277,7 +277,7 @@ classDiagram
     }
 
     class AntiPlagiarismSessionImpl {
-        +AntiPlagiarismSessionImpl(provider: ProjectsProvider, output: Output)
+        +AntiPlagiarismSessionImpl(configuration: RunConfiguration)
         +run()
     }
     AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
@@ -360,7 +360,7 @@ classDiagram
         <<interface>>
         +line: Int
         +column: Int
-        +marker: Integer
+        +type: Int
     }
     Token -- TokenizedSource
 
@@ -380,29 +380,29 @@ Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la s
 ```mermaid 
 classDiagram
     direction BT
-    class PlagiarismDetector~in I: SourceRepresentation~ {
+    class PlagiarismDetector~in S: SourceRepresentation~ {
         <<interface>>
-        +computeSimilarity(first: I, second: I) ComparisonResult
+        +computeSimilarity(first: S, second: S) ComparisonResult
     }
 
-    class ComparisonResult~in I: SourceRepresentation~ {
+    class ComparisonResult~in S: SourceRepresentation~ {
         <<interface>>
-        -first: I
-        -second: I
+        -first: S
+        -second: S
         +scoreOfSimilarity: Int
         +matches: Sequence~Token~
     }
     PlagiarismDetector -- ComparisonResult
 
-    class PlagiarismDetectorImpl {
+    class TokenBasedPlagiarismDetector~TokenizedSource~ {
         -strategy: ComparisonStrategy
     }
-    PlagiarismDetectorImpl ..|> PlagiarismDetector
+    TokenBasedPlagiarismDetector ..|> PlagiarismDetector
 
     class ComparisonStrategy {
         <<interface>>
     }
-    PlagiarismDetectorImpl *--> ComparisonStrategy
+    TokenBasedPlagiarismDetector *--> ComparisonStrategy
 
     class KarpRabinStrategy 
     KarpRabinStrategy ..|> ComparisonStrategy
@@ -441,5 +441,11 @@ classDiagram
         +setConfiguration(configuration: RunConfiguration)
     }
 
+    class RunConfiguration {
+        +corpusProvider: RepositoryProvider
+        +output: Output
+        +minimumTokens: Int
+        +filesToExclude: Sequence~File~
+    }
     RunConfiguration --* CPDConfigurationManager
 ```
