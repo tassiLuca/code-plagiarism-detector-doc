@@ -308,18 +308,18 @@ classDiagram
         +process(input: I) O
     }
 
-    class Parser~File, AST~ {
-        +process(input: File) AST
+    class Parser~File, CompilationUnit~ {
+        +process(input: File) CompilationUnit
     }
     Parser ..|> StepHandler
 
-    class Preprocessor~AST, AST~ {
-        +process(input: AST) AST
+    class Preprocessor~CompilationUnit, CompilationUnit~ {
+        +process(input: CompilationUnit) CompilationUnit
     }
     Preprocessor ..|> StepHandler
 
-    class Tokenizer~AST, Sequence< Token >~ {
-        +process(input: AST) Sequence~Token~
+    class Tokenizer~CompilationUnit, Sequence< Token >~ {
+        +process(input: CompilationUnit) Sequence~Token~
     }
     Tokenizer ..|> StepHandler
 
