@@ -362,13 +362,14 @@ classDiagram
         +column: Int
         +type: Int
     }
-    Token -- TokenizedSource
+    Token --* TokenizedSource
 
     class Gram {
         <<interface>>
         +tokens: Sequence~Token~
     }
     Token --* Gram
+    Gram -- TokenizedSource
 ```
 <!-- italian version:
 Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
