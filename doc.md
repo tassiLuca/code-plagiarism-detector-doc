@@ -324,13 +324,17 @@ classDiagram
     Tokenizer ..|> StepHandler
 
     class TokenizationAnalyzer~File, TokenizedSource~ {
+        <<abstract>>
         -pipeline: StepHandler
         +execute(input: File) TokenizedSource
     }
     TokenizationAnalyzer ..|> Analyzer
-    StepHandler <--* TokenizationAnalyzer
+
+    JavaTokenizationAnalyzer --|> TokenizationAnalyzer
+    StepHandler <--* JavaTokenizationAnalyzer
 
     class TokenizationAnalyzerProxy~File, TokenizedSource~ {
+        <<abstract>>
         -analyzer: TokenAnalyzer
         -knoledgeBaseRepo: KnoledgeBaseRepository
         +execute(input: File) TokenizedSource
@@ -360,7 +364,7 @@ classDiagram
         <<interface>>
         +line: Int
         +column: Int
-        +type: Int
+        +type: TokenType
     }
     Token --* TokenizedSource
 
@@ -370,6 +374,20 @@ classDiagram
     }
     Token --* Gram
     Gram -- TokenizedSource
+
+    class TokenType {
+        <<interface>>
+        +name: String
+        +languageConstructs: Collection~String~
+    }
+    Token *-- TokenType
+
+    class LanguageTokenTypes {
+        <<interface>>
+        +getTokenTypeBy(constructName: String) TokenType
+        +isValidToken(constructName: String) Boolean
+    }
+    LanguageTokenTypes *-- TokenType
 ```
 <!-- italian version:
 Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
