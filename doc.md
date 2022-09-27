@@ -401,30 +401,42 @@ classDiagram
     direction BT
     class PlagiarismDetector~in S: SourceRepresentation~ {
         <<interface>>
-        +computeSimilarity(first: S, second: S) ComparisonResult
+        +invoke(first: S, second: S) ComparisonResult
     }
 
-    class ComparisonResult~S: SourceRepresentation~ {
+    class ComparisonResult~out M: Match~ {
         <<interface>>
-        -first: S
-        -second: S
         +scoreOfSimilarity: Int
-        +matches: Sequence~Token~
+        +matches: Sequence~M~
     }
     PlagiarismDetector -- ComparisonResult
 
     class TokenBasedPlagiarismDetector~TokenizedSource~ {
         -strategy: ComparisonStrategy
+        -computeSimilarity() Double
     }
     TokenBasedPlagiarismDetector ..|> PlagiarismDetector
 
-    class ComparisonStrategy {
+    class ComparisonStrategy~out M: Match~ {
         <<interface>>
+        +invoke(representations: Pair~S, S~) Sequence~Match~
     }
     TokenBasedPlagiarismDetector *--> ComparisonStrategy
 
-    class KarpRabinStrategy 
-    KarpRabinStrategy ..|> ComparisonStrategy
+    GreedyStringTiling ..|> ComparisonStrategy
+
+    class Match {
+        <<interface>>
+    }
+    
+    class TokenMatch~out S: SourceRepresentation~ {
+        <<interface>>
+        +pattern: Pair~S, Sequence< Token >~
+        +text: Pair~S, Sequence< Token >~
+        +length: Int
+    }
+    TokenMatch --|> Match
+    ComparisonStrategy -- TokenMatch
 ```
 
 <!-- italian version:
