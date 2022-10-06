@@ -13,7 +13,7 @@
     - [Output](#output)
     - [AntiPlagirismSession](#antiplagirismsession)
     - [Analyzer](#analyzer)
-    - [Configurable Options - **TODO**](#configurable-options---todo)
+    - [Configurable Options](#configurable-options)
 
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
@@ -396,6 +396,8 @@ Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la s
 `PlagiarismDetector` is the component that detects similarities between two `SourceRepresentation`.
 `ComparisonStrategy` encapsulates the specific algorithm used to detect the similarities.
 
+`Match` represents two sections of `SourceRepresentation` that are similar.
+
 ```mermaid 
 classDiagram
     direction BT
@@ -423,16 +425,16 @@ classDiagram
     }
     TokenBasedPlagiarismDetector *--> ComparisonStrategy
 
-    GreedyStringTiling ..|> ComparisonStrategy
+    GreedyStringTiling~TokenMatch~ ..|> ComparisonStrategy
 
     class Match {
         <<interface>>
     }
     
-    class TokenMatch~out S: SourceRepresentation~ {
+    class TokenMatch {
         <<interface>>
-        +pattern: Pair~S, Sequence< Token >~
-        +text: Pair~S, Sequence< Token >~
+        +pattern: Pair~TokenizedSource, Sequence< Token >~
+        +text: Pair~TokenizedSource, Sequence< Token >~
         +length: Int
     }
     TokenMatch --|> Match
@@ -455,28 +457,70 @@ classDiagram
     }
 ```
 
-### Configurable Options - **TODO**
+### Configurable Options
+
+----
+- **Positional arguments (A)**: 
+  - **provides information to either the command or one of its options** (`-o file`
+  - advantage of being able to accept a variable number of values
+  - commonly used for values like file paths or URLs or for required values
+- **Options (O)**
+  - follows Unix conventions: use options for most parameters
+  - are limited to a fixed number of values
+  - **modify the behavior of the command** (e.g. `-v`: verbose)
+  - Can 
+    - acts as flags (don't have to take values)
+    - prompt for missing input
+    - load values from environment variables
+  - commonly used for "everything else"
+- **Subcommands**: functions / (low-level) commands, which are used with "metacommands" that embed multiple separate commands, like `git status -s` - `status` is the subcommand and `-s` is an option of the subcommand
+
+----
+
 - `--minimum-tokens`: The minimum token length which should be reported as a duplicate;
+- `--minimum-duplication-percentage`: the percentage of duplicated code in a source file under which are not reported;
 - `--provider`: the providers of projects (sources);
-- `--output-format`: report formats;
-- `--language`: Sources code language;
+  - Corpus provider: provider of projects to compare with
+    - hosting service
+      - github / bitbucket
+      - search criteria / url
+    - path to directory where find projects
+  - Submission provider: provider of the project to analyze
+    - URL 
+    - path to directory where find the project
+- `--output-format`: report format - a set of possible choices;
+- `--output-dir`: the directory where to store the result
+- `--language`: Sources code language (?);
 - `--verbose`: Debug mode;
-- `--exclude`: Files to be excluded from checks (for example `Pair.java`).
+- `--exclude`: Files names to be excluded from checks (for example `Pair.java`).
+
+(da aggiungere autenticazione ai provider?)
+
+```bash
+cpd --submission-provider <URI> --corpus-provider  --minimum-tokens <INT> --minimum-duplication-percentage <INT> --output-format <HTML/...> --output-dir <PATH> --language <?> --verbose --exclude <FILE_NAMES> 
+```
 
 ```mermaid 
 classDiagram
     direction BT
-    class CPDConfigurationManager {
+    class ConfigurationManager {
         <<interface>>
-        +loadOrTakeDefaultConfiguration() RunConfiguration
-        +setConfiguration(configuration: RunConfiguration)
+        + configuration: RunConfiguration
+    } 
+
+    class CLIManager {
+
     }
+    CLIManager ..|> ConfigurationManager
 
     class RunConfiguration {
+        <<interface>>
+        +submissionProvider: RepositoryProvider
         +corpusProvider: RepositoryProvider
         +output: Output
         +minimumTokens: Int
         +filesToExclude: Sequence~File~
+        +...
     }
-    RunConfiguration --* CPDConfigurationManager
+    ConfigurationManager ..> RunConfiguration : creates
 ```
