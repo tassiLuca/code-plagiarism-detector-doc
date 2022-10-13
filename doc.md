@@ -14,6 +14,7 @@
     - [AntiPlagirismSession](#antiplagirismsession)
     - [Analyzer](#analyzer)
     - [Configurable Options](#configurable-options)
+    - [Problema delle dipendenze](#problema-delle-dipendenze)
 
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
@@ -461,7 +462,7 @@ classDiagram
 
 ----
 - **Positional arguments (A)**: 
-  - **provides information to either the command or one of its options** (`-o file`
+  - **provides information to either the command or one of its options** (`-o file`)
   - advantage of being able to accept a variable number of values
   - commonly used for values like file paths or URLs or for required values
 - **Options (O)**
@@ -483,7 +484,7 @@ classDiagram
   - Corpus provider: provider of projects to compare with
     - hosting service
       - github / bitbucket
-      - search criteria / url
+      - search criteria
     - path to directory where find projects
   - Submission provider: provider of the project to analyze
     - URL 
@@ -491,13 +492,13 @@ classDiagram
 - `--output-format`: report format - a set of possible choices;
 - `--output-dir`: the directory where to store the result
 - `--language`: Sources code language (?);
-- `--verbose`: Debug mode;
+- `--verbose`: Debug mode (?);
 - `--exclude`: Files names to be excluded from checks (for example `Pair.java`).
 
 (da aggiungere autenticazione ai provider?)
 
 ```bash
-cpd --submission-provider <URI> --corpus-provider  --minimum-tokens <INT> --minimum-duplication-percentage <INT> --output-format <HTML/...> --output-dir <PATH> --language <?> --verbose --exclude <FILE_NAMES> 
+./cpd submission-provider --origin <URI> corpus-provider --minimum-tokens <INT> --minimum-duplication-percentage <INT> --output-format <HTML/...> --output-dir <PATH> --language <?> --verbose --exclude <FILE_NAMES> 
 ```
 
 ```mermaid 
@@ -517,10 +518,41 @@ classDiagram
         <<interface>>
         +submissionProvider: RepositoryProvider
         +corpusProvider: RepositoryProvider
-        +output: Output
         +minimumTokens: Int
-        +filesToExclude: Sequence~File~
-        +...
+        +minimumDuplicationPercentage: Double
+        +output: Output
+        +filesToExclude: Set~File~
+        +language: Set~String~
     }
     ConfigurationManager ..> RunConfiguration : creates
+```
+
+### Problema delle dipendenze
+Si hanno non banali, non codificate opzioni:
+
+```mermaid 
+classDiagram
+    direction BT
+
+    class RunConfiguration~S : SourceRepresentation< T >, T, out M : Match~ {
+        <<interface>>
+        +analyzer: Analyzer~S, T~
+        +detector: PlagiarismDetector~S, T, M~
+        +submission: Set~Repository~
+        +corpus: Set~Repository~
+        +filesToExclude: Set~String~
+    }
+    class TokenRunConfiguration~TokenizedSource, Sequence< Token >, TokenMatch~ {
+        <<interface>>
+        +minimumTokens: Int
+        +minimumDuplicationPercentage: Double
+    }
+    TokenRunConfiguration --|> RunConfiguration
+
+    class Session~out C : RunConfiguration~ {
+        -configuration: 
+    }
+    RunConfiguration --* Session
+
+
 ```
