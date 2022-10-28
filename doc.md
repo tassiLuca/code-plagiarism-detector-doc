@@ -257,7 +257,7 @@ classDiagram
     direction BT
     class ResultExporter~out M : Match~ {
         <<interface>>
-        +export(outputs: Set~Result<M>~)
+        +export(outputs: Set~Result<‎M‎>~)
     }
     FileExporter ..|> ResultExporter
 ```
