@@ -255,14 +255,11 @@ classDiagram
 ```mermaid
 classDiagram
     direction BT
-    class Output {
+    class ResultExporter~out M : Match~ {
         <<interface>>
-        +print(output: String)
+        +export(outputs: Set~Result<‎M‎>~)
     }
-    class CLIOutput 
-    class FileOutput
-    FileOutput ..|> Output
-    CLIOutput ..|> Output
+    FileExporter ..|> ResultExporter
 ```
 
 ### Analyzer
