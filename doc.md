@@ -11,10 +11,8 @@
   - [Design](#design)
     - [ProjectsProvider](#projectsprovider)
     - [Output](#output)
-    - [AntiPlagirismSession](#antiplagirismsession)
     - [Analyzer](#analyzer)
-    - [Configurable Options](#configurable-options)
-    - [Problema delle dipendenze](#problema-delle-dipendenze)
+    - [Configurable Options + AntiPlagirismSession](#configurable-options--antiplagirismsession)
 
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
@@ -267,23 +265,6 @@ classDiagram
     CLIOutput ..|> Output
 ```
 
-### AntiPlagirismSession
-
-```mermaid
-classDiagram
-    direction BT
-    class AntiPlagiarismSession {
-        <<interface>>
-        + run()
-    }
-
-    class AntiPlagiarismSessionImpl {
-        +AntiPlagiarismSessionImpl(configuration: RunConfiguration)
-        +run()
-    }
-    AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
-```
-
 ### Analyzer
 
 <!-- italian version:
@@ -458,7 +439,7 @@ classDiagram
     }
 ```
 
-### Configurable Options
+### Configurable Options + AntiPlagirismSession
 
 ----
 - **Positional arguments (A)**: 
@@ -501,36 +482,7 @@ classDiagram
 ./cpd submission-provider --origin <URI> corpus-provider --minimum-tokens <INT> --minimum-duplication-percentage <INT> --output-format <HTML/...> --output-dir <PATH> --language <?> --verbose --exclude <FILE_NAMES> 
 ```
 
-```mermaid 
-classDiagram
-    direction BT
-    class ConfigurationManager {
-        <<interface>>
-        + configuration: RunConfiguration
-    } 
-
-    class CLIManager {
-
-    }
-    CLIManager ..|> ConfigurationManager
-
-    class RunConfiguration {
-        <<interface>>
-        +submissionProvider: RepositoryProvider
-        +corpusProvider: RepositoryProvider
-        +minimumTokens: Int
-        +minimumDuplicationPercentage: Double
-        +output: Output
-        +filesToExclude: Set~File~
-        +language: Set~String~
-    }
-    ConfigurationManager ..> RunConfiguration : creates
-```
-
-### Problema delle dipendenze
-Si hanno non banali, non codificate opzioni:
-
-```mermaid 
+```mermaid
 classDiagram
     direction BT
 
@@ -540,19 +492,43 @@ classDiagram
         +detector: PlagiarismDetector~S, T, M~
         +submission: Set~Repository~
         +corpus: Set~Repository~
+        +language: Language
         +filesToExclude: Set~String~
+        +output: Output
     }
-    class TokenRunConfiguration~TokenizedSource, Sequence< Token >, TokenMatch~ {
-        <<interface>>
-        +minimumTokens: Int
-        +minimumDuplicationPercentage: Double
-    }
+    class TokenRunConfiguration~TokenizedSource, Sequence< Token >, TokenMatch~
     TokenRunConfiguration --|> RunConfiguration
 
-    class Session~out C : RunConfiguration~ {
-        -configuration: 
+    class AntiPlagiarismSession~out C : RunConfiguration~ {
+        -configuration: C
+        +invoke()
     }
-    RunConfiguration --* Session
+    RunConfiguration --* AntiPlagiarismSession
+
+    class AntiPlagiarismSessionImpl~out C : Configuration~ {
+        +AntiPlagiarismSessionImpl(configuration: C)
+        +run()
+    }
+    AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
+```
 
 
+```mermaid 
+sequenceDiagram
+    autonumber
+    activate Main
+
+    Main ->> CLIConfigurator: args
+    activate CLIConfigurator
+    CLIConfigurator ->> CLIConfigurator: create configuration
+    CLIConfigurator ->> AntiPlagiarismSession: create
+    CLIConfigurator -->> Main: session
+    deactivate CLIConfigurator
+
+    Main ->> AntiPlagiarismSession: run
+    activate AntiPlagiarismSession
+    AntiPlagiarismSession -->> Main: result
+    deactivate AntiPlagiarismSession
+
+    deactivate Main
 ```
