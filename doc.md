@@ -40,34 +40,41 @@ classDiagram
         <<interface>>
         + getScoreOfSimilarity(): Int
     } 
-    class Project {
+    class Repository {
         <<interface>>
+        +sources: Set~File~
     }
-    class SourceFile {
-        <<interface>>
-    }
-    SourceFile --* Project
-    Report "*" -- "2" SourceFile: related to
+
+    Report *-- Repository: submittedProject
+    Report *-- Repository: comparedProject
 
     class AntiPlagiarismSession {
         <<interface>>
-        + run()
-    }
-    class PlagiarismDetector {
-        <<interface>>
-    }
-    class Analyzer {
-        <<interface>>
-    }
-    class SourceRepresentation {
-        <<interface>>
+        +invoke()
     }
     AntiPlagiarismSession "1" -- "*" Report: generates
     AntiPlagiarismSession *-- "1" PlagiarismDetector
-    SourceRepresentation "*" -- "*" PlagiarismDetector: input
-    AntiPlagiarismSession *-- Analyzer
-    Analyzer "1" -- "*" SourceRepresentation: creates
 
+    class PlagiarismDetector {
+        <<interface>>
+    }
+    SourceRepresentation "2" -- "*" PlagiarismDetector: input
+    ComparisonResult "*" -- "1" PlagiarismDetector: output
+    
+    class ComparisonResult {
+        <<interface>>
+    }
+    Report *-- ComparisonResult
+
+    class Analyzer {
+        <<interface>>
+    }
+    AntiPlagiarismSession *-- Analyzer
+
+    class SourceRepresentation {
+        <<interface>>
+    }
+    Analyzer "1" -- "1" SourceRepresentation: creates
 ```
 
 ## Architettura
@@ -257,9 +264,16 @@ classDiagram
     direction BT
     class ResultExporter~out M : Match~ {
         <<interface>>
-        +export(outputs: Set~Result<‎M‎>~)
+        +export(results: Set~Result<‎M‎>~)
     }
-    FileExporter ..|> ResultExporter
+    FileExporter~out M : Match~ ..|> ResultExporter
+
+    class ResultRetrieval~in M : Match, out T~ {
+        <<interface>>
+        +getPlagiarizedSections() T
+    }
+    TokenMatchRetrieval~TokenMatch, ...~ ..|> ResultRetrieval
+    ResultExporter *--> ResultRetrieval
 ```
 
 ### Analyzer
@@ -528,4 +542,60 @@ sequenceDiagram
     deactivate AntiPlagiarismSession
 
     deactivate Main
+```
+
+```mermaid
+classDiagram
+    class ResultsExporter {
+        <<interface>>
+        +export(extractor: Set~ResultExtractor~)
+    }
+    class FileExporter {
+        <<abstract>>
+    }
+    FileExporter ..|> ResultsExporter
+    class PlainFileExporter {
+
+    }
+    PlainFileExporter --|> FileExporter
+
+    class TechniqueFacade {
+        <<inteface>>
+        +executeTechnique() ResultExtractor
+    }
+    class TokenizationFacade {
+        +TokenizationFacade(configs: TokenizationConfig)
+    }
+    TokenizationFacade ..|> TechniqueFacade
+
+    class TechniqueConfig~out M : Match~ {
+        +language: Language
+        +facade: TechniqueFacade~M~
+    }
+    class TokenizationConfig~TokenMatch~ {
+        +language: Language
+        +minTokens: Int
+        +facade: TokenizationFacade
+    }
+    TokenizationConfig ..|> TechniqueConfig
+
+    TokenizationConfig ..> TokenizationFacade : creates
+
+    class RunConfiguration {
+        +technique: TechniqueFacade
+        +exporter: ResultsExporter
+    }
+    RunConfiguration *--> TechniqueFacade
+    RunConfiguration *--> ResultsExporter
+
+    class ResultExtractor {
+        <<interface>>
+        +extract(...)
+    }
+    class TokenizationResultExtractor {
+        -result: Result~TokenMatch~
+    }
+    TokenizationResultExtractor ..|> ResultExtractor
+    TechniqueFacade o--> ResultExtractor
+
 ```
