@@ -35,7 +35,7 @@ Inoltre, il requisito non funzionale sulle _performance_ richiederà un'analisi 
 
 ```mermaid
 classDiagram 
-    direction TB
+direction TB
     class Report {
         <<interface>>
         + getScoreOfSimilarity(): Int
@@ -44,36 +44,33 @@ classDiagram
         <<interface>>
         +sources: Set~File~
     }
-
-    Report *-- Repository: submittedProject
-    Report *-- Repository: comparedProject
+    Repository "1" --* Report: submittedProject
+    Repository "1" --* Report: comparedProject
 
     class AntiPlagiarismSession {
         <<interface>>
         +invoke()
     }
     AntiPlagiarismSession "1" -- "*" Report: generates
-    AntiPlagiarismSession *-- "1" PlagiarismDetector
 
     class PlagiarismDetector {
         <<interface>>
     }
-    SourceRepresentation "2" -- "*" PlagiarismDetector: input
-    ComparisonResult "*" -- "1" PlagiarismDetector: output
-    
     class ComparisonResult {
         <<interface>>
     }
-    Report *-- ComparisonResult
-
     class Analyzer {
         <<interface>>
     }
-    AntiPlagiarismSession *-- Analyzer
-
     class SourceRepresentation {
         <<interface>>
     }
+    ComparisonResult *-- "2" SourceRepresentation: refers to
+    PlagiarismDetector "*" -- "2" SourceRepresentation: input
+    ComparisonResult "*" -- "1" PlagiarismDetector: output
+    Report *-- "*" ComparisonResult
+    AntiPlagiarismSession *-- Analyzer
+    AntiPlagiarismSession *-- "1" PlagiarismDetector
     Analyzer "1" -- "1" SourceRepresentation: creates
 ```
 
