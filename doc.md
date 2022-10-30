@@ -159,14 +159,14 @@ classDiagram
 
     class GitHubProviderFactory {
         <<companion object>>
-        +connectAnonymously(): GitHubProvider
+        +connectAnonymously() GitHubProvider
         +connectWithToken(tokenSupplier: TokenSupplierStrategy) GitHubProvider
     }
     GitHubProviderFactory ..> GitHubProvider: creates
 
     class BitbucketProviderFactory {
         <<companion object>>
-        +connectAnonymously(): BitbucketProvider
+        +connectAnonymously() BitbucketProvider
         +connectWithToken(tokenSupplier: TokenSupplierStrategy) BitbucketProvider
     }
     BitbucketProviderFactory ..> BitbucketProvider: creates
@@ -229,39 +229,56 @@ classDiagram
 ```mermaid
 classDiagram
     direction BT
-    class SearchCriteria~T~ {
+    class SearchCriteria~in I, out O~ {
         <<interface>>
-        +apply() T
+        +apply(subject: I) O
     }
 
-    class GitHubSearchCriteria~String~ {
+    class GitHubSearchCriteria~GitHub, GHRepositorySearchBuilder~ {
         <<interface>>
-        +apply() String
+        +apply(subject: GitHub) GHRepositorySearchBuilder
     }
     GitHubSearchCriteria --|> SearchCriteria
-    class ByGitHubUser
+    class ByGitHubUser {
+        +ByGitHubUser(username: String)
+    }
     ByGitHubUser ..|> GitHubSearchCriteria
     class GitHubCompoundCriteria {
         <<abstract>>
+        +GitHubCompoundCriteria(criteria: GitHubSearchCriteria)
     }
     GitHubCompoundCriteria ..|> GitHubSearchCriteria
+    class ByGitHubName {
+        +ByGitHubName(repoName: String, criteria: GitHubSearchCriteria)
+    }
     ByGitHubName --|> GitHubCompoundCriteria
+    class ByGitHubLanguage {
+        +ByGitHubName(language: String, criteria: GitHubSearchCriteria)
+    }
     ByGitHubLanguage --|> GitHubCompoundCriteria
 
-    class BitbucketSearchCriteria~String~ {
+    class BitbucketSearchCriteria~String, String~ {
         <<interface>>
-        +apply() String
+        +apply(subject: String) String
     }
     BitbucketSearchCriteria --|> SearchCriteria
-    class ByBitbucketUser
+    class ByBitbucketUser {
+        +ByBitbucketUser(username: String)
+    }
     ByBitbucketUser ..|> BitbucketSearchCriteria
     class BitbucketCompoundCriteria {
         <<abstract>>
+        +BitbucketCompoundCriteria(criteria: BitbucketSearchCriteria)
     }
     BitbucketCompoundCriteria ..|> BitbucketSearchCriteria
+    class ByBitbucketName {
+        +ByBitbucketName(repoName: String, criteria: BitbucketCompoundCriteria)
+    }
     ByBitbucketName --|> BitbucketCompoundCriteria
+    class ByBitbucketLanguage {
+        +ByBitbucketLanguage(language: String, criteria: ByBitbucketLanguage)
+    }
     ByBitbucketLanguage --|> BitbucketCompoundCriteria
-
 ```
 
 ### Output
@@ -293,14 +310,16 @@ Il `TokenizationAnalyzerProxy` è l'oggetto intermediario che si occuperà, nel 
 
 The [Pipeline](https://java-design-patterns.com/patterns/pipeline/) pattern is used to model the sequence of transformations performed to transform a source file into a comparable representation.
 
-`TokenizationAnalyzerProxy` is an intermediary object that manages the recovery of previously analyzed and cached files without having to re-analyse them.
+<!--
+`TokenizationAnalyzerProxy` is an intermediary object that manages the recovery of previously analyzed and cached files without having to re-analyse them. 
+-->
 
 ```mermaid 
 classDiagram
     direction BT
-    class Analyzer~I, out O: SourceRepresentation~ {
+    class Analyzer~out S: SourceRepresentation<T>~ {
         <<interface>>
-        +execute(input: I) O
+        +invoke(input: File) S
     }
 
     class StepHandler~I, O~ {
@@ -323,7 +342,7 @@ classDiagram
     }
     Tokenizer ..|> StepHandler
 
-    class TokenizationAnalyzer~File, TokenizedSource~ {
+    class TokenizationAnalyzer~TokenizedSource, Sequence<Token>~ {
         <<abstract>>
         -pipeline: StepHandler
         +execute(input: File) TokenizedSource
@@ -332,15 +351,6 @@ classDiagram
 
     JavaTokenizationAnalyzer --|> TokenizationAnalyzer
     StepHandler <--* JavaTokenizationAnalyzer
-
-    class TokenizationAnalyzerProxy~File, TokenizedSource~ {
-        <<abstract>>
-        -analyzer: TokenAnalyzer
-        -knoledgeBaseRepo: KnoledgeBaseRepository
-        +execute(input: File) TokenizedSource
-    }
-    TokenizationAnalyzerProxy ..|> Analyzer
-    TokenizationAnalyzerProxy *--> TokenizationAnalyzer
 ```
 
 `SourceRepresentation` is the interface modeling the intermediate representation, which is generated from the source file, prior to comparison.
@@ -348,13 +358,13 @@ Among available representations, the source code token sequence is the most comm
 
 ```mermaid
 classDiagram
-    direction BT
+direction BT
     class SourceRepresentation~T~ {
         <<interface>>
-        +file: File
+        +sourceFile: File
         +representation: T
     }
-    class TokenizedSource~Sequence< Token >~ {
+    class TokenizedSource~Sequence<Token>~ {
         <<interface>>
         +splitInGramsOf(dimension: Int) Sequence~Gram~
     }
@@ -366,28 +376,40 @@ classDiagram
         +column: Int
         +type: TokenType
     }
-    Token --* TokenizedSource
+    Token <--* TokenizedSource
 
     class Gram {
         <<interface>>
-        +tokens: Sequence~Token~
+        +items: List~Token~
     }
-    Token --* Gram
+    Token <--* Gram
     Gram -- TokenizedSource
 
     class TokenType {
         <<interface>>
         +name: String
-        +languageConstructs: Collection~String~
+        +languageConstructs: Set~String~
     }
-    Token *-- TokenType
+    TokenType <--* Token
 
     class LanguageTokenTypes {
         <<interface>>
-        +getTokenTypeBy(constructName: String) TokenType
-        +isValidToken(constructName: String) Boolean
+        +tokenFor(constructName: String) TokenType
+        +isToken(constructName: String) Boolean
     }
-    LanguageTokenTypes *-- TokenType
+    TokenType <--* LanguageTokenTypes
+
+    class TokenTypesSupplier {
+        <<interface>>
+        +tyèes: LanguageTokenTypes
+    }
+    LanguageTokenTypes <--* TokenTypesSupplier
+
+    class FileTokenTypesSupplier {
+        <<inteface>>
+        +FileTokenTypesSuppier(configFileName: String)
+    }
+    TokenTypesSupplier <|.. FileTokenTypesSupplier
 ```
 <!-- italian version:
 Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
@@ -400,32 +422,46 @@ Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la s
 
 ```mermaid 
 classDiagram
-    direction BT
-    class PlagiarismDetector~in S: SourceRepresentation~ {
+direction BT
+    class PlagiarismDetector~in S: SourceRepresentation<T>, T, out M: Match~ {
         <<interface>>
-        +invoke(first: S, second: S) ComparisonResult
+        +invoke(first: S, second: S) ComparisonResult~M~
     }
 
     class ComparisonResult~out M: Match~ {
         <<interface>>
-        +scoreOfSimilarity: Int
+        +similarity: Double
         +matches: Sequence~M~
     }
     PlagiarismDetector -- ComparisonResult
+    ComparisonResult <|.. TokenBasedComparisonResult~TokenMatch~
 
-    class TokenBasedPlagiarismDetector~TokenizedSource~ {
-        -strategy: ComparisonStrategy
-        -computeSimilarity() Double
+    class TokenBasedPlagiarismDetector~TokenizedSource, Sequence<Token, TokenMatch~ {
+        -comparisonStrategy: ComparisonStrategy~TokenizedSource, Sequence<Token, TokenMatch~
+        -similarityEstimationStrategy: TokenBasedSimilarityStrategy
+        +invoke(Pair~TokenizedSource, TokenizedSource~) ComparisonResult~TokenMatch~
     }
     TokenBasedPlagiarismDetector ..|> PlagiarismDetector
 
-    class ComparisonStrategy~out M: Match~ {
+    class SimilarityEstimationStrategy~in S: SourceRepresentation<T>, T, out M: Match~ {
         <<interface>>
-        +invoke(representations: Pair~S, S~) Sequence~Match~
+        +similarityOf(representation: Pair~S, S~, matches: Set~M~) Double
+    }
+    class TokenBasedSimilarityStrategy~TokenizedSource, Sequence<Token>, TokenMatch~
+    SimilarityEstimationStrategy <|-- TokenBasedSimilarityStrategy
+    %% NormalizedAverageSimilarityStrategy ..|> TokenBasedSimilarityStrategy
+    %% NormalizedMaxSimilarityStrategy ..|> TokenBasedSimilarityStrategy
+    TokenBasedSimilarityStrategy --* TokenBasedPlagiarismDetector
+
+    class ComparisonStrategy~in S: SourceRepresentation<T>, T, out M: Match~ {
+        <<interface>>
+        +invoke(representations: Pair~S, S~) Set~Match~
     }
     TokenBasedPlagiarismDetector *--> ComparisonStrategy
 
-    GreedyStringTiling~TokenMatch~ ..|> ComparisonStrategy
+    BaseGreedyStringTiling~TokenizedSource, Sequence<Token>, TokenMatch~ ..|> ComparisonStrategy
+    GreedyStringTiling --|> BaseGreedyStringTiling
+    RKRGreedyStringTiling --|> BaseGreedyStringTiling
 
     class Match {
         <<interface>>
@@ -433,8 +469,8 @@ classDiagram
     
     class TokenMatch {
         <<interface>>
-        +pattern: Pair~TokenizedSource, Sequence< Token >~
-        +text: Pair~TokenizedSource, Sequence< Token >~
+        +pattern: Pair~TokenizedSource, List<Token>~
+        +text: Pair~TokenizedSource, List<Token>~
         +length: Int
     }
     TokenMatch --|> Match
