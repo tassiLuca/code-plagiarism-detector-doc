@@ -82,24 +82,25 @@ L'analisi dei sorgenti viene effettuata dall'`Analyzer` che incapsula la specifi
 
 Questa architettura permetterebbe facilmente l'aggiunta di un nuovo `Output` e di poter cambiare sia la strategia per recuperare i progetti, sia la logica con cui questi vengono processati.
 
+MANCA INPUT
+
 ```mermaid
 classDiagram
     direction TB
-    class AntiPlagiarismSystem
-    class AntiPlagiarismSessionImpl
     class AntiPlagiarismSession {
         <<interface>>
-        + run()
+        +invoke()
     }
-    AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
-    AntiPlagiarismSystem ..> AntiPlagiarismSessionImpl: creates
 
-    class ProjectsProvider {
+    class RepositoryProvider {
         <<interface>>
     }
-    AntiPlagiarismSession *--> ProjectsProvider
-    class RepoProvider 
-    ProjectsProvider <|.. RepoProvider
+    AntiPlagiarismSession *--> RepositoryProvider
+
+    class PlagiarismDetector {
+        <<interface>>
+    }
+    AntiPlagiarismSession *--> PlagiarismDetector
 
     class Analyzer {
         <<interface>>
@@ -118,8 +119,8 @@ classDiagram
     }
     AntiPlagiarismSession *--> Output
     class CLIOutput 
-    class FileOutput
-    Output <|.. FileOutput
+    class FileExporter
+    Output <|.. FileExporter
     Output <|.. CLIOutput
 ```
 
@@ -134,10 +135,10 @@ Componenti:
 ```mermaid
 classDiagram
     direction BT
-    class RepositoryProvider~in C : SearchCriteria<T>~ {
+    class RepositoryProvider~in C : SearchCriteria~ {
         <<interface>>
         +byLink(url: URL) Repository
-        +byCriteria(criteria: C) Iterable~Repository~
+        +byCriteria(criteria: C) Sequence~Repository~
     }
     class AbstractRepositoryProvider~in C: SearchCriteria~ {
         <<abstract>>
@@ -148,24 +149,33 @@ classDiagram
     AbstractRepositoryProvider ..|> RepositoryProvider
 
     class GitHubProvider~GitHubSearchCriteria~ {
-        #getRepoByURL(url: URL) Repository
-        #urlIsValid(urL: URL) Boolean
-        +byCriteria(criteria: C) Iterable~Repository~
+        -GitHubProvider()
     }
     class BitbucketProvider~BitbucketSearchCriteria~ {
-        #getRepoByURL(url: URL) Repository
-        #urlIsValid(urL: URL) Boolean
-        +byCriteria(criteria: C) Iterable~Repository~
+        -BitbucketProvider()
     }
     GitHubProvider --|> AbstractRepositoryProvider
     BitbucketProvider --|> AbstractRepositoryProvider
+
+    class GitHubProviderFactory {
+        <<companion object>>
+        +connectAnonymously(): GitHubProvider
+        +connectWithToken(tokenSupplier: TokenSupplierStrategy) GitHubProvider
+    }
+    GitHubProviderFactory ..> GitHubProvider: creates
+
+    class BitbucketProviderFactory {
+        <<companion object>>
+        +connectAnonymously(): BitbucketProvider
+        +connectWithToken(tokenSupplier: TokenSupplierStrategy) BitbucketProvider
+    }
+    BitbucketProviderFactory ..> BitbucketProvider: creates
 
     class TokenSupplierStrategy {
         <<interface>>
         +token: String
     }
     TokenSupplierStrategy <--o RepositoryProvider
-    class EnvironmentTokenSupplier 
     EnvironmentTokenSupplier ..|> TokenSupplierStrategy
 ```
 
