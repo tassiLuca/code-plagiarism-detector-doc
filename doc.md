@@ -10,9 +10,9 @@
   - [Architettura](#architettura)
   - [Design](#design)
     - [ProjectsProvider](#projectsprovider)
-    - [Output](#output)
     - [Analyzer](#analyzer)
     - [Configurable Options + AntiPlagirismSession](#configurable-options--antiplagirismsession)
+    - [Output](#output)
 
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
@@ -281,25 +281,6 @@ classDiagram
     ByBitbucketLanguage --|> BitbucketCompoundCriteria
 ```
 
-### Output
-
-```mermaid
-classDiagram
-    direction BT
-    class ResultExporter~out M : Match~ {
-        <<interface>>
-        +export(results: Set~Result<‎M‎>~)
-    }
-    FileExporter~out M : Match~ ..|> ResultExporter
-
-    class ResultRetrieval~in M : Match, out T~ {
-        <<interface>>
-        +getPlagiarizedSections() T
-    }
-    TokenMatchRetrieval~TokenMatch, ...~ ..|> ResultRetrieval
-    ResultExporter *--> ResultRetrieval
-```
-
 ### Analyzer
 
 <!-- italian version:
@@ -513,27 +494,33 @@ classDiagram
 
 ----
 
+**Tokenization Technique**
 - `--minimum-tokens`: The minimum token length which should be reported as a duplicate;
-- `--minimum-duplication-percentage`: the percentage of duplicated code in a source file under which are not reported;
-- `--provider`: the providers of projects (sources);
-  - Corpus provider: provider of projects to compare with
-    - hosting service
-      - github / bitbucket
-      - search criteria
-    - path to directory where find projects
-  - Submission provider: provider of the project to analyze
-    - URL 
-    - path to directory where find the project
-- `--output-format`: report format - a set of possible choices;
-- `--output-dir`: the directory where to store the result
-- `--language`: Sources code language (?);
-- `--verbose`: Debug mode (?);
-- `--exclude`: Files names to be excluded from checks (for example `Pair.java`).
 
+**Commons options**
+- `--technique`: technique used to analyze and detect similarities.
+- `--exporter`: the output type format.
+- `--minimum-duplication-percentage`: the percentage of duplicated code in a source file under which are not reported;
+- `--output-format`: report format - a set of possible choices;
+- `--o`/`--output-dir`: the directory where to store the result
+- `--language`: Sources code language;
+- `--exclude`: File names to be excluded from checks (for example `Pair.java`).
+
+**Provider Subcommands: `submission`, `corpus`**
+**TODO**
 (da aggiungere autenticazione ai provider?)
 
+Example:
+
 ```bash
-./cpd submission-provider --origin <URI> corpus-provider --minimum-tokens <INT> --minimum-duplication-percentage <INT> --output-format <HTML/...> --output-dir <PATH> --language <?> --verbose --exclude <FILE_NAMES> 
+--output-dir /Users/lucatassi/Desktop/cpd-results
+--minimum-tokens 15
+submission
+--url https://github.com/DanySK/Student-Project-OOP20-Chiarini-Pezzi-Quarneti-Tassinari-rogue
+corpus
+--repository-name Student-Project-OOP20
+--user danysk
+--service github
 ```
 
 ```mermaid
@@ -585,4 +572,21 @@ sequenceDiagram
     deactivate AntiPlagiarismSession
 
     deactivate Main
+```
+
+### Output
+
+```mermaid
+classDiagram
+    direction BT
+    class ResultExporter~in M : Match~ {
+        <<interface>>
+        +invoke(results: Set~Result<M>~)
+    }
+    class FileExporter~in M : Match~ {
+        <<abstract>>
+        +FileExporter(outputDirectory: Path)
+    }
+    FileExporter ..|> ResultExporter
+    PlainFileExporter~in M : Match~ --|> FileExporter
 ```
