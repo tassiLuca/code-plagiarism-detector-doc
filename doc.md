@@ -12,7 +12,6 @@
     - [ProjectsProvider](#projectsprovider)
     - [Analyzer](#analyzer)
     - [Configurable Options + AntiPlagirismSession](#configurable-options--antiplagirismsession)
-    - [Output](#output)
 
 ## Analisi dei requisiti
 Si vuole realizzare un sistema software in grado di trovare eventuali porzioni di codice copiato nei progetti software del corso di OOP dell'Università di Bologna, sviluppati in linguaggio Java.
@@ -526,33 +525,60 @@ corpus
 ```mermaid
 classDiagram
     direction BT
-
-    class RunConfiguration~S : SourceRepresentation< T >, T, out M : Match~ {
+    class RunConfigurator {
         <<interface>>
-        +analyzer: Analyzer~S, T~
-        +detector: PlagiarismDetector~S, T, M~
+        +sessionFrom(args: List~String~) AntiPlagiarismSession
+    }
+    RunConfigurator <|.. CLIConfigurator
+
+    class RunConfiguration~M : Match~ {
+        <<interface>>
+        +technique: TechniqueFacade~M~
+        +minDuplicatedPercentage: Double
         +submission: Set~Repository~
         +corpus: Set~Repository~
-        +language: Language
         +filesToExclude: Set~String~
-        +output: Output
+        +exporter: ResultsExporter~M~
     }
-    class TokenRunConfiguration~TokenizedSource, Sequence< Token >, TokenMatch~
-    TokenRunConfiguration --|> RunConfiguration
+    class RunConfigurationImpl~M : Match~
+    RunConfiguration <.. RunConfigurator : creates
 
-    class AntiPlagiarismSession~out C : RunConfiguration~ {
-        -configuration: C
+    class TechniqueFacade~out M : Match~ {
+        <<interface>>
+        +execute(\nㅤㅤsubmittedRepo: Repository, \n ㅤㅤcomparedRepo: Repository, \n ㅤㅤfilesToExclude: Set~String~, \n ㅤㅤminDuplicationPercentage: Double\n) Result~M~
+    }
+    class TokenizationFacade~TokenMatch~ {
+        -analyzer: TokenizationAnalyzer
+        -detector: TokenBasedPlagiarismDetector
+    }
+    TokenizationFacade ..|> TechniqueFacade
+
+    class ResultExporter~in M : Match~ {
+        <<interface>>
+        +invoke(results: Set~Result<M>~)
+    }
+    class FileExporter~in M : Match~ {
+        <<abstract>>
+        +FileExporter(outputDirectory: Path)
+    }
+    FileExporter ..|> ResultExporter
+    PlainFileExporter~in M : Match~ --|> FileExporter
+
+    TechniqueFacade --* RunConfiguration
+    ResultExporter --* RunConfiguration
+
+    class AntiPlagiarismSession {
+        <<interface>>
         +invoke()
     }
-    RunConfiguration --* AntiPlagiarismSession
-
-    class AntiPlagiarismSessionImpl~out C : Configuration~ {
+    class AntiPlagiarismSessionImpl~out C : Configuration<M>, M : Match~ {
+        -configuration: C
         +AntiPlagiarismSessionImpl(configuration: C)
-        +run()
+        +invoke()
     }
     AntiPlagiarismSessionImpl ..|> AntiPlagiarismSession
+    AntiPlagiarismSessionImpl *--> RunConfiguration
 ```
-
 
 ```mermaid 
 sequenceDiagram
@@ -572,21 +598,4 @@ sequenceDiagram
     deactivate AntiPlagiarismSession
 
     deactivate Main
-```
-
-### Output
-
-```mermaid
-classDiagram
-    direction BT
-    class ResultExporter~in M : Match~ {
-        <<interface>>
-        +invoke(results: Set~Result<M>~)
-    }
-    class FileExporter~in M : Match~ {
-        <<abstract>>
-        +FileExporter(outputDirectory: Path)
-    }
-    FileExporter ..|> ResultExporter
-    PlainFileExporter~in M : Match~ --|> FileExporter
 ```
