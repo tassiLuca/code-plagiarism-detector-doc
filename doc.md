@@ -37,7 +37,7 @@ classDiagram
 direction TB
     class Report {
         <<interface>>
-        + getScoreOfSimilarity(): Int
+        + scoreOfSimilarity: Double
     } 
     class Repository {
         <<interface>>
@@ -133,7 +133,7 @@ Componenti:
 
 ```mermaid
 classDiagram
-    direction BT
+direction BT
     class RepositoryProvider~in C : SearchCriteria~ {
         <<interface>>
         +byLink(url: URL) Repository
@@ -159,14 +159,14 @@ classDiagram
     class GitHubProviderFactory {
         <<companion object>>
         +connectAnonymously() GitHubProvider
-        +connectWithToken(tokenSupplier: TokenSupplierStrategy) GitHubProvider
+        +connectWithToken(\nㅤㅤtokenSupplier: TokenSupplierStrategy\n) GitHubProvider
     }
     GitHubProviderFactory ..> GitHubProvider: creates
 
     class BitbucketProviderFactory {
         <<companion object>>
         +connectAnonymously() BitbucketProvider
-        +connectWithToken(tokenSupplier: TokenSupplierStrategy) BitbucketProvider
+        +connectWithToken(\nㅤㅤtokenSupplier: TokenSupplierStrategy\n) BitbucketProvider
     }
     BitbucketProviderFactory ..> BitbucketProvider: creates
 
@@ -174,8 +174,9 @@ classDiagram
         <<interface>>
         +token: String
     }
-    TokenSupplierStrategy <--o RepositoryProvider
     EnvironmentTokenSupplier ..|> TokenSupplierStrategy
+    TokenSupplierStrategy <--o GitHubProviderFactory
+    TokenSupplierStrategy <--o BitbucketProviderFactory
 ```
 
 - L'interfaccia `Repository` espone proprietà e metodi per ottenere il suo nome, il suo _owner_ e i suoi sorgenti in base a un dato linguaggio di programmazione. Anche in questo caso `AbstractRepository` cattura l'implementazione comune di `GitHubRepository` e `BitBucketRepository`. 
@@ -188,24 +189,20 @@ classDiagram
         <<interface>>
         +name: String
         +owner: String
-        +getSources(language: String) Iterable~File~
+        +cloneUrl: URL
+        +getSources(pattern: Regex) Sequence~File~
     }
     class AbstractRepository {
         <<abstract>>
-        #cloneUrl: URL
-        +getSources(language: String) Iterable~File~
+        +getSources(pattern: Regex) Sequence~File~
     }
     AbstractRepository ..|> Repository
     class GitHubRepository {
-        -adapteeRepo: Repo
-        +name: String
-        #cloneUrl: URL
-        +GitHubRepository(adapteeRepo: Repo)
+        -repository: Repo
+        +GitHubRepository(repository: GHRepository)
     }
     class BitBucketRepository {
         -repoInfos: JSONObject
-        +name: String
-        #cloneUrl: URL
         +BitBucketRepository(repoInfos: JSONObject)
     }
     GitHubRepository --|> AbstractRepository
@@ -215,9 +212,8 @@ classDiagram
         <<interface>>
         +getFilesOf(extensions: Iterable~String~)
     }
-    RepoContentSupplierStrategy <--o Repository
-    class RepoContentSupplierCloneStrategy 
-    RepoContentSupplierCloneStrategy ..|> RepoContentSupplierStrategy
+    RepoContentSupplierStrategy <--* AbstractRepository
+    CloneStrategy ..|> RepoContentSupplierStrategy
 ```
 
 - `SearchCriteria` è un'interfaccia che rappresenta un criterio con cui filtrare le repo.
