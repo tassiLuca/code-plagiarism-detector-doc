@@ -1,4 +1,7 @@
 # Code plagiarism detector doc
+<!-- Mermaid notes 
+For nested generics use ‎ character
+-->
 
 [Link Github](https://github.com/tassiLuca/code-plagiarism-detector)
 
@@ -41,6 +44,7 @@ direction TB
     } 
     class Repository {
         <<interface>>
+        +name: String
         +sources: Set~File~
     }
     Repository "1" --* Report: submittedProject
@@ -61,6 +65,9 @@ direction TB
     class Analyzer {
         <<interface>>
     }
+    class Filter {
+        <<interface>>
+    }
     class SourceRepresentation {
         <<interface>>
     }
@@ -68,9 +75,13 @@ direction TB
     PlagiarismDetector "*" -- "2" SourceRepresentation: input
     ComparisonResult "*" -- "1" PlagiarismDetector: output
     Report *-- "*" ComparisonResult
-    AntiPlagiarismSession *-- Analyzer
+    
+    AntiPlagiarismSession *-- "1" Analyzer
     AntiPlagiarismSession *-- "1" PlagiarismDetector
+    AntiPlagiarismSession *-- "1" Filter
+
     Analyzer "1" -- "1" SourceRepresentation: creates
+    Filter "*" -- "*" SourceRepresentation: filters
 ```
 
 ## Architettura
@@ -493,7 +504,7 @@ classDiagram
     }
     KnoledgeBaseRepositoryImpl ..|> KnoledgeBaseRepository
 
-    class RepresentationSerializer~S: SourceRepresentation<T>, T~ {
+    class RepresentationSerializer~S: SourceRepresentation< T >, T~ {
         <<interface>>
         +serialize(representations: Set~S~, out: File)
         +deserialize(serializedContent: File) Set~S~
