@@ -104,7 +104,7 @@ direction TB
     class RepositoryProvider {
         <<interface>>
     }
-    RepositoryProvider <--* RunConfiguration
+    RepositoryProvider "1..*" <--* RunConfiguration
 
     class RunConfigurator {
         <<interface>>
@@ -120,36 +120,37 @@ direction TB
     class PlagiarismDetector {
         <<interface>>
     }
-    RunConfiguration *--> PlagiarismDetector
+    RunConfiguration *--> "1" PlagiarismDetector
 
     class Analyzer {
         <<interface>>
     }
-    RunConfiguration *--> Analyzer
+    RunConfiguration *--> "1" Analyzer
 
     class Filter {
         <<interface>>
     }
-    RunConfiguration *--> Filter
+    RunConfiguration *--> "1" Filter
 
     class KnoledgeBaseRepository {
         <<interface>>
         + save()
         + load()
     }
-    KnoledgeBaseRepository <--* RunConfiguration
+    KnoledgeBaseRepository "1" <--* RunConfiguration
 
     class Output {
         <<interface>>
     }
-    Output <|.. CLIOutput
     class ReportsExporter {
         <<interface>>
         +export(reports: Set~Report~)
     }
     Output <|-- ReportsExporter
     ReportsExporter <|.. FileExporter
-    AntiPlagiarismSession *--> Output
+    RunConfiguration *--> "1" ReportsExporter
+    Output <|.. CLIOutput
+    AntiPlagiarismSession *--> "1" Output
 ```
 
 ## Design
