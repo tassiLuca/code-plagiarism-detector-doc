@@ -387,10 +387,31 @@ direction BT
     }
     TokenTypesSupplier <|.. FileTokenTypesSupplier
 ```
+
+Filter:
+
+```mermaid
+classDiagram
+direction BT
+    class RepresentationFilter~S: SourceRepresentation<T>, T~ {
+        <<interface>>
+        +invoke(submission: S, corpus: Sequence~S~) Sequence~S~
+    }
+    class TokenizedSourceFilter~TokenizedSource, Sequence<Token>~
+    TokenizedSourceFilter ..|> RepresentationFilter
+
+    class Indexer~in S: SourceRepresentation<T>, T, I~ {
+        +invoke(input: S) I
+    }
+    class TokenBasedIndexer~TokenizedSource, Sequence<Token>, Map<TokenType, Int>~
+    TokenBasedIndexer ..|> Indexer
+
+    TokenizedSourceFilter *--> TokenBasedIndexer
+```
+
 <!-- italian version:
 Il `PlagiarismDetector` è la strategia (algoritmo) con cui viene calcolata la similarità tra una coppia di artefatti. 
 -->
-
 `PlagiarismDetector` is the component that detects similarities between two `SourceRepresentation`.
 `ComparisonStrategy` encapsulates the specific algorithm used to detect the similarities.
 
