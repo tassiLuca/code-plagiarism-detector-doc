@@ -35,6 +35,7 @@ Il sistema deve essere in grado, a partire da un insieme di progetti e sorgenti,
 La principale difficoltà sarà individuare tecniche di analisi lessicali e di rilevamento delle somiglianze che siano robuste, ovvero permettano d'identificare casi di copiature anche se lo sviluppatore ha effettuato modifiche per nasconderle (come ad esempio cambiare identificatori, nomi, l'ordine dei parametri ecc...)
 Inoltre, il requisito non funzionale sulle _performance_ richiederà un'analisi dei tempi di esecuzione quando il sistema sarà completato.
 
+Schema :white_check_mark:: 
 ```mermaid
 classDiagram 
 direction TB
@@ -92,11 +93,9 @@ L'analisi dei sorgenti viene effettuata dall'`Analyzer` che incapsula la specifi
 
 Questa architettura permetterebbe facilmente l'aggiunta di un nuovo `Output` e di poter cambiare sia la strategia per recuperare i progetti, sia la logica con cui questi vengono processati.
 
-MANCA INPUT
-
 ```mermaid
 classDiagram
-    direction TB
+direction TB
     class AntiPlagiarismSession {
         <<interface>>
         +invoke()
@@ -105,33 +104,52 @@ classDiagram
     class RepositoryProvider {
         <<interface>>
     }
-    AntiPlagiarismSession *--> RepositoryProvider
+    RepositoryProvider <--* RunConfiguration
+
+    class RunConfigurator {
+        <<interface>>
+    }
+    CLIConfigurator ..|> RunConfigurator
+
+    class RunConfiguration {
+        <<inteface>>
+    }
+    RunConfigurator ..> RunConfiguration: creates
+    AntiPlagiarismSession *--> RunConfiguration
 
     class PlagiarismDetector {
         <<interface>>
     }
-    AntiPlagiarismSession *--> PlagiarismDetector
+    RunConfiguration *--> PlagiarismDetector
 
     class Analyzer {
         <<interface>>
     }
-    AntiPlagiarismSession *--> Analyzer
+    RunConfiguration *--> Analyzer
+
+    class Filter {
+        <<interface>>
+    }
+    RunConfiguration *--> Filter
 
     class KnoledgeBaseRepository {
         <<interface>>
         + save()
         + load()
     }
-    Analyzer *--> KnoledgeBaseRepository
+    KnoledgeBaseRepository <--* RunConfiguration
 
     class Output {
         <<interface>>
     }
-    AntiPlagiarismSession *--> Output
-    class CLIOutput 
-    class FileExporter
-    Output <|.. FileExporter
     Output <|.. CLIOutput
+    class ReportsExporter {
+        <<interface>>
+        +export(reports: Set~Report~)
+    }
+    Output <|-- ReportsExporter
+    ReportsExporter <|.. FileExporter
+    AntiPlagiarismSession *--> Output
 ```
 
 ## Design
