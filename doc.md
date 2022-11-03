@@ -474,20 +474,36 @@ direction BT
     ComparisonStrategy -- TokenMatch
 ```
 
-<!-- italian version:
-`KnoledgeBaseRepository` è il componente che si occuperà di salvare il risultato del _processing_ dei sorgenti in modo tale da poter riutilizzarli in un secondo momento senza dover rifare l'analisi.
--->
-
-**[TODO]** `KnoledgeBaseRepository` is the component that will take care of saving/loading the results of project sources processing so that they can be reused at a later time without having to be re-analyzed
+`KnoledgeBaseRepository` is the component that will take care of saving/loading the results of project sources processing so that they can be reused at a later time without having to be cloned again and re-analyzed
 
 ```mermaid
 classDiagram
     direction BT
     class KnoledgeBaseRepository {
         <<interface>>
-        +save()
-        +loadIfExists() 
+        +save(repository: Repository)
+        +loadIfExists(repository: Repository)
     }
+    class KnoledgeBaseRepositoryImpl {
+        <<interface>>
+        -repositoryFolder: File
+        -serializer: RepresentationSerializer
+        +save(repository: Repository)
+        +loadIfExists(repository: Repository)
+    }
+    KnoledgeBaseRepositoryImpl ..|> KnoledgeBaseRepository
+
+    class RepresentationSerializer~S: SourceRepresentation<T>, T~ {
+        <<interface>>
+        +serialize(representations: Set~S~, out: File)
+        +deserialize(serializedContent: File) Set~S~
+    }
+    class TokenizedSourceSerializer~TokenizedSource, Sequence<Token>~ {
+        +serialize(representations: Set~TokenizedSource~, out: File)
+        +deserialize(serializedContent: File) Set~TokenizedSource~
+    }
+    TokenizedSourceSerializer ..|> RepresentationSerializer
+    KnoledgeBaseRepositoryImpl *--> RepresentationSerializer
 ```
 
 ### Configurable Options + AntiPlagirismSession
