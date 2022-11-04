@@ -117,6 +117,7 @@ direction TB
         <<interface>>
         +invoke()
     }
+    AntiPlagiarismSession *--> RunConfiguration
 
     class RunConfigurator {
         <<interface>>
@@ -127,7 +128,6 @@ direction TB
         <<inteface>>
     }
     RunConfigurator ..> RunConfiguration: << creates >>
-    AntiPlagiarismSession *--> RunConfiguration
 
     class RepositoryProvider {
         <<interface>>
