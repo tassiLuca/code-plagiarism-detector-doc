@@ -43,46 +43,61 @@ direction TB
         <<interface>>
         + scoreOfSimilarity: Double
     } 
+    Report *-- "*" ComparisonResult
+
     class Repository {
         <<interface>>
         +name: String
         +sources: Set~File~
     }
-    Repository "1" --* Report: submittedProject
-    Repository "1" --* Report: comparedProject
+    Report *-- "1" Repository: submittedProject
+    Report *-- "1" Repository: comparedProject
 
     class AntiPlagiarismSession {
         <<interface>>
         +invoke()
     }
     AntiPlagiarismSession "1" -- "*" Report: generates
+    AntiPlagiarismSession *-- "1" RunConfiguration
+
+    class RunConfiguration {
+        <<interface>>
+    }
+    RunConfiguration *-- "1" PlagiarismDetector
+    RunConfiguration *-- "1" Analyzer
+    RunConfiguration *-- "1" Filter
+    Repository "*" --* RunConfiguration
 
     class PlagiarismDetector {
         <<interface>>
     }
+    PlagiarismDetector "*" -- "2" SourceRepresentation: input
+
     class ComparisonResult {
         <<interface>>
     }
+    ComparisonResult *-- "2" SourceRepresentation: refers to
+    ComparisonResult "*" -- "1" PlagiarismDetector: output
+
     class Analyzer {
         <<interface>>
     }
+    Analyzer "1" -- "1" SourceRepresentation: creates
+
     class Filter {
         <<interface>>
     }
+    Filter "*" -- "*" SourceRepresentation: filters
+
     class SourceRepresentation {
         <<interface>>
     }
-    ComparisonResult *-- "2" SourceRepresentation: refers to
-    PlagiarismDetector "*" -- "2" SourceRepresentation: input
-    ComparisonResult "*" -- "1" PlagiarismDetector: output
-    Report *-- "*" ComparisonResult
-    
-    AntiPlagiarismSession *-- "1" Analyzer
-    AntiPlagiarismSession *-- "1" PlagiarismDetector
-    AntiPlagiarismSession *-- "1" Filter
 
-    Analyzer "1" -- "1" SourceRepresentation: creates
-    Filter "*" -- "*" SourceRepresentation: filters
+    class SourceFile {
+        <<interface>>
+    }
+    Repository *-- "*" SourceFile
+    SourceFile "1" -- "1" SourceRepresentation: of
 ```
 
 ## Architettura
