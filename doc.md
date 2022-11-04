@@ -48,7 +48,7 @@ direction TB
     class Repository {
         <<interface>>
         +name: String
-        +sources: Set~File~
+        +owner: String
     }
     Report *-- "1" Repository: submittedProject
     Report *-- "1" Repository: comparedProject
@@ -95,6 +95,7 @@ direction TB
 
     class SourceFile {
         <<interface>>
+        +fileName: String
     }
     Repository *-- "*" SourceFile
     SourceFile "1" -- "1" SourceRepresentation: of
@@ -157,7 +158,7 @@ direction TB
         + save()
         + load()
     }
-    KnoledgeBaseRepository "1" <--* RunConfiguration
+%%  KnoledgeBaseRepository "1" <--* RunConfiguration
 
     class Output {
         <<interface>>
