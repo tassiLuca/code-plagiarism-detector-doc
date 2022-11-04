@@ -108,6 +108,7 @@ L'analisi dei sorgenti viene effettuata dall'`Analyzer` che incapsula la specifi
 
 Questa architettura permetterebbe facilmente l'aggiunta di un nuovo `Output` e di poter cambiare sia la strategia per recuperare i progetti, sia la logica con cui questi vengono processati.
 
+Schema :white_check_mark:: 
 ```mermaid
 classDiagram
 direction TB
@@ -115,11 +116,6 @@ direction TB
         <<interface>>
         +invoke()
     }
-
-    class RepositoryProvider {
-        <<interface>>
-    }
-    RepositoryProvider "1..*" <--* RunConfiguration
 
     class RunConfigurator {
         <<interface>>
@@ -131,6 +127,15 @@ direction TB
     }
     RunConfigurator ..> RunConfiguration: creates
     AntiPlagiarismSession *--> RunConfiguration
+
+    class RepositoryProvider {
+        <<interface>>
+    }
+    class Repository {
+        <<interface>>
+    }
+    Repository "2..*" <--* RunConfiguration
+    RepositoryProvider ..> Repository: retrieves
 
     class PlagiarismDetector {
         <<interface>>
