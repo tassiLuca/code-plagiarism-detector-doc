@@ -102,13 +102,6 @@ direction TB
 ```
 
 ## Architettura
-`AntiPlagiarismSystem` è l'_entry point_ dell'applicazione ed ha il compito d'istanziare e configurare opportunamente la concreta implementazione di `AntiplagiarismSession` che è la classe responsabile della logica dell'applicazione. 
-`AntiPlagiarismSession` rappresenta una specifica sessione, dove per sessione si intende l'oggetto che, una volta configurato con l'apposito _Provider_ e _Output_, esegue la logica dell'applicazione.
-Gli `Output` rappresentano le risorse su cui andare a scrivere i risultati ottenuti, mentre il `ProjectsProvider` rappresenta la strategia con cui recuperare i progetti su cui effettuare l'analisi.
-L'analisi dei sorgenti viene effettuata dall'`Analyzer` che incapsula la specifica strategia utilizzata e demanda a `KnoledgeBaseRepository` il salvataggio e/o il recupero delle rappresentazioni dei sorgenti già precedentemente analizzati.
-
-Questa architettura permetterebbe facilmente l'aggiunta di un nuovo `Output` e di poter cambiare sia la strategia per recuperare i progetti, sia la logica con cui questi vengono processati.
-
 Schema :white_check_mark:: 
 ```mermaid
 classDiagram
@@ -182,6 +175,7 @@ Componenti:
 - `AbstractRepositoryProvider` cattura l'implementazione comune dei due concreti `GitHub` e `BitbucketProvider`. 
 - `TokenSupplierStrategy` è l'interfaccia a cui viene richiesto di recuperare il token di autenticazione ad un servizio. L'implementazione di default ricerca tra variabili d'ambiente.
 
+Schema :white_check_mark:: 
 ```mermaid
 classDiagram
 direction BT
@@ -233,6 +227,7 @@ direction BT
 - L'interfaccia `Repository` espone proprietà e metodi per ottenere il suo nome, il suo _owner_ e i suoi sorgenti in base a un dato linguaggio di programmazione. Anche in questo caso `AbstractRepository` cattura l'implementazione comune di `GitHubRepository` e `BitBucketRepository`. 
 - La logica di recupero dei repository remoti e dei relativi file è demandata a un'interfaccia via Strategy a `RepoContentSupplierStrategy`: l'implentazione di default (`RepoContentSupplierCloneStrategy`) clona localmente la repo (altri approcci potrebbero essere seguiti, motivo per il quale si è deciso di scorporare in un'interfaccia a sè stante lo specifico algoritmo di recupero del contenuto di una repo).
 
+Schema :white_check_mark:: 
 ```mermaid
 classDiagram
     direction BT
@@ -272,6 +267,7 @@ classDiagram
 - [Link Bitbucket > Filter and sort API objects ](https://developer.atlassian.com/cloud/bitbucket/rest/intro/#filtering)
 - [Link GitHub > Searching for repositories](https://docs.github.com/en/search-github/searching-on-github/searching-for-repositories)
 
+Schema :white_check_mark:: 
 ```mermaid
 classDiagram
     direction BT
@@ -393,7 +389,7 @@ direction BT
     }
     class TokenizedSource~Sequence<Token>~ {
         <<interface>>
-        +splitInGramsOf(dimension: Int) Sequence~Gram~
+        +splitInGramsOf(dimension: Int) Sequence~Gram<Token>~
     }
     TokenizedSource --|> SourceRepresentation
 
@@ -405,9 +401,9 @@ direction BT
     }
     Token <--* TokenizedSource
 
-    class Gram {
+    class Gram~T~ {
         <<interface>>
-        +items: List~Token~
+        +items: List~T~
     }
     Token <--* Gram
     Gram -- TokenizedSource
@@ -428,7 +424,7 @@ direction BT
 
     class TokenTypesSupplier {
         <<interface>>
-        +tyèes: LanguageTokenTypes
+        +types: LanguageTokenTypes
     }
     LanguageTokenTypes <--* TokenTypesSupplier
 
@@ -449,7 +445,7 @@ direction BT
         +invoke(submission: S, corpus: Sequence~S~) Sequence~S~
     }
     class TokenizedSourceFilter~TokenizedSource, Sequence<Token>~
-    TokenizedSourceFilter ..|> RepresentationFilter
+    RepresentationFilter <|.. TokenizedSourceFilter
 
     class Indexer~in S: SourceRepresentation<T>, T, I~ {
         +invoke(input: S) I
@@ -495,10 +491,12 @@ direction BT
         <<interface>>
         +similarityOf(representation: Pair~S, S~, matches: Set~M~) Double
     }
-    class TokenBasedSimilarityStrategy~TokenizedSource, Sequence<Token>, TokenMatch~
+    class TokenBasedSimilarityStrategy~TokenizedSource, Sequence<Token>, TokenMatch~ {
+        <<interface>>
+    }
     SimilarityEstimationStrategy <|-- TokenBasedSimilarityStrategy
-    %% NormalizedAverageSimilarityStrategy ..|> TokenBasedSimilarityStrategy
-    %% NormalizedMaxSimilarityStrategy ..|> TokenBasedSimilarityStrategy
+    NormalizedAverageSimilarityStrategy ..|> TokenBasedSimilarityStrategy
+    NormalizedMaxSimilarityStrategy ..|> TokenBasedSimilarityStrategy
     TokenBasedSimilarityStrategy --* TokenBasedPlagiarismDetector
 
     class ComparisonStrategy~in S: SourceRepresentation<T>, T, out M: Match~ {
@@ -530,19 +528,20 @@ direction BT
 ```mermaid
 classDiagram
     direction BT
-    class KnoledgeBaseRepository {
+    class KnoledgeBaseRepository~S: SourceRepresentation<T>, T~ {
         <<interface>>
-        +save(repository: Repository)
-        +loadIfExists(repository: Repository)
+        +save(repository: Repository, representations: Sequence~S~)
+        +loadIfExists(repository: Repository) Sequence~S~
     }
-    class KnoledgeBaseRepositoryImpl {
+    class FileKnoledgeBaseRepository~S: SourceRepresentation<T>, T~ {
         <<interface>>
         -repositoryFolder: File
-        -serializer: RepresentationSerializer
-        +save(repository: Repository)
-        +loadIfExists(repository: Repository)
+        -serializer: RepresentationSerializer~S, T~
+        +FileKnoledgeBaseRepository(serializer: RepresentationSerializer~S, T~)
+        +save(repository: Repository, representations: Sequence~S~)
+        +loadIfExists(repository: Repository) Sequence~S~
     }
-    KnoledgeBaseRepositoryImpl ..|> KnoledgeBaseRepository
+    FileKnoledgeBaseRepository ..|> KnoledgeBaseRepository
 
     class RepresentationSerializer~S: SourceRepresentation< T >, T~ {
         <<interface>>
@@ -554,7 +553,7 @@ classDiagram
         +deserialize(serializedContent: File) Set~TokenizedSource~
     }
     TokenizedSourceSerializer ..|> RepresentationSerializer
-    KnoledgeBaseRepositoryImpl *--> RepresentationSerializer
+    FileKnoledgeBaseRepository *--> RepresentationSerializer
 ```
 
 ### Configurable Options + AntiPlagirismSession
